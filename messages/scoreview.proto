@@ -1,0 +1,132 @@
+
+package scoreview;
+
+message dialogName
+{
+	optional string dialogname = 1;
+}
+
+message openScoreFiles
+{
+	required int32  operation = 1;
+	optional string path = 2;
+	optional string filename = 3;
+}
+
+message instrument
+{
+	optional string instrumentName = 1;
+	optional int32  voiceIndex = 2;
+}
+
+message InstrumentRemAdd
+{
+	optional bool       todelete = 1;
+	optional instrument instru = 2;
+}
+
+message configuration
+{
+	optional bool  recordAtStart = 1;
+	optional bool  doNotChangeOpenedFiles = 2;
+}
+
+message currentAudioIO
+{
+	optional string apiName = 1;
+	optional string inputDeviceName = 2;
+	optional string outputDeviceName = 3;
+}
+
+message instrumentList
+{
+	repeated instrument instruElts = 1;
+}
+
+message audioDevice
+{
+	optional string name = 1;
+	optional int32  out = 2;
+	optional int32  in = 3;
+	optional int32  deviceApiCode = 4;
+}
+
+message audioApi
+{
+	optional string       name = 1;
+	repeated audioDevice  devlist = 2;
+}
+
+message audioIOConfig
+{
+	optional currentAudioIO current = 1;
+	repeated audioApi apis = 2;
+}
+
+message noteFrequency
+{
+	optional float frequency = 1;
+	optional int32 stringNum = 2;
+}
+
+message note
+{
+	optional float time = 1;
+	optional float duration = 2;
+	repeated noteFrequency freqs = 3;
+	optional bool  connected = 4;
+	optional int64 uniqueid = 5;
+}
+
+message noteRemAdd
+{
+	required bool todelete = 1;
+	optional note notedesc = 2;
+}
+
+message measure
+{
+	optional int32  times = 1;
+	optional double startTimecode = 2;
+	optional double duration = 3;
+}
+
+message measureRemAdd
+{
+	required bool    todelete = 1;
+	optional measure mesdesc = 2;
+}
+
+message	practice
+{
+	required double     timecode  = 1;
+	required double     viewtime  = 2;
+	optional bool       reload    = 3;
+	optional bool       dopractice = 4;
+	optional double     countdownDayTime = 5;
+	optional double     loopTime  = 6;
+	optional float      hifreq    = 7;
+	optional float      lofreq    = 8;
+	optional instrument instru    = 9;
+	optional bool       loop      = 10;
+	optional float      speedfactor = 11;
+}
+
+message score
+{
+	repeated instrument instruElts = 1;
+	repeated measure    mesdesc = 2;
+}
+
+message scoreNotes
+{
+	optional instrument instru = 1;
+	repeated note       noteList = 2;
+}
+
+message wireMessage
+{
+	required int32 type = 1;
+	optional bytes messageData = 2;
+}
+
