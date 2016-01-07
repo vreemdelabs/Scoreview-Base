@@ -90,6 +90,7 @@ OUTPUT_DIR=./app/
 
 clean:
 	rm -f $(OBJDIR)/*.o
+	rm -f *.o
 	rm -f *.bin
 	rm -f *~
 	rm -f $(COMMONSRCDIR)/*~

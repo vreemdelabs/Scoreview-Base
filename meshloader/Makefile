@@ -33,6 +33,8 @@ clean:
 	rm -f *.bin
 	rm -f *~
 	rm -f $(TARGET_NAME)
+	rm -f $(EXE_NAME)$(EXT)
+	rm -f test_lex_yy$(EXT)
 
 .PHONY: test
 test:

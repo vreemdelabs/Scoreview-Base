@@ -1,0 +1,25 @@
+ScoreviewLogo        ICON    "scoreview.ico"
+ScoreviewLogoResTray RT_ICON "scoreview.ico"
+1 VERSIONINFO
+FILEVERSION     1,0,0,0
+PRODUCTVERSION  1,0,0,0
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "080904E4"
+    BEGIN
+      VALUE "CompanyName", "Vreemdelabs"
+      VALUE "FileDescription", "Music analyser"
+      VALUE "FileVersion", "1.0 Beta"
+      VALUE "InternalName", "Scoreview"
+      VALUE "LegalCopyright", "Copyright 2015 Patrick Areny"
+      VALUE "OriginalFilename", "scoreview.exe"
+      VALUE "ProductName", "Scoreview"
+      VALUE "ProductVersion", "1.0 Beta"
+    END
+  END
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x809, 1252
+  END
+END

@@ -11,6 +11,7 @@ TARGET_NAME=messages.a
 
 clean:
 	rm -f $(OBJDIR)/*.o
+	rm -f *.o
 	rm -f *~
 	rm -f scoreview.pb.cc
 	rm -f scoreview.pb.h
