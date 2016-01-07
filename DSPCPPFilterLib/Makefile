@@ -15,7 +15,7 @@ clean:
 	rm -f *.o
 	rm -f *.bin
 	rm -f *~
-	rm $(TARGET_NAME)
+	rm -f $(TARGET_NAME)
 
 all:
 	$(CC) $(FLAGS) ChebyshevII.cpp
