@@ -1,5 +1,5 @@
 
 This is a filtering library just calling Vinnie Falco's DSPFilters at "https://github.com/vinniefalco/DSPFilters/"
 It must be compiled from source because DSPFilters is not a library but a set of templates. You must set your DSPFilters cloned sources directory in the makefile.
-If you have many compilation warnings it may just be just in cascade.h:126 *dest++ = ..; to *dest = ...; dest++;
+If you have many compilation warnings it may just be in cascade.h:126 *dest++ = ..; to *dest = ...; dest++;
 
