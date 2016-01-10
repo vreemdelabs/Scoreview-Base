@@ -91,7 +91,11 @@ void open_log_file()
 
 void close_log_file()
 {
+#ifndef __LINUX
   freopen("CON", "w", stdout);
+#else
+  fclose(stdout);
+#endif
 }
 #else
 void open_log_file()

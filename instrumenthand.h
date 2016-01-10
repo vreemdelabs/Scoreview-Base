@@ -101,3 +101,24 @@ class CInstrumentHandGuitar: public CInstrumentHand
   const int m_cstring_num;
   float     m_stringf[40];
 };
+
+class CInstrumentHandGuitarDropD: public CInstrumentHand
+{
+ public:
+  CInstrumentHandGuitarDropD();
+  ~CInstrumentHandGuitarDropD();
+
+  int get_first_string(float f);
+  int get_next_string(float f, int string_number);
+  int get_prev_string(float f, int string_number);
+  int get_proper_string(float f, int string_number);
+  std::string get_string_text(int string_number);
+  int get_color(int string_number);
+  int get_string_num();
+  int get_string_abs_note(int string);
+
+ private:
+  const int m_cnotes_per_string;
+  const int m_cstring_num;
+  float     m_stringf[40];
+};

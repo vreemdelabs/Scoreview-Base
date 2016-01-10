@@ -1,9 +1,10 @@
 # Scoreview-Base
-Scoreview is a tool to a analyse music and learn how to play it on various instruments.
+Scoreview is a tool to analyse music and learn how to play it on various instruments.
 
-Build:
+Command to build it:
 
 make project
+
 
 It needs a lot of dependecies: SDL2, SDL2_ttf, SDL2_image, Portaudio, Tinyxml, libevent, libsndfile, OpenGL, OpenCL, Protocol buffers, FLTK, DSPFilters.
 

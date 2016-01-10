@@ -90,3 +90,14 @@ bool CscoreEditGuitar::change_chord_frequency_element(CScorePlacement *pplacemen
   return bchange;
 }
 
+//----------------------------------------------------------------------------------------------------------------------
+// Drop D version, same thing
+
+CscoreEditGuitarDropD::CscoreEditGuitarDropD(Ckeypress *pkstates):CscoreEditGuitar(pkstates)
+{
+}
+
+CscoreEditGuitarDropD::~CscoreEditGuitarDropD()
+{
+}
+

@@ -290,6 +290,7 @@ void CpictureList::open_instrument_tabs_drawings(string imagefile)
       add_picture_from_area(dim, srcrect, img, string("nail_piano"));
       srcrect.x += 129;
       add_picture_from_area(dim, srcrect, img, string("nail_guitar"));
+      add_picture_from_area(dim, srcrect, img, string("nail_guitar_dropD"));
       //
       SDL_FreeSurface(img);
     }

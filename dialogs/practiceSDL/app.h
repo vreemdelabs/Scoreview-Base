@@ -79,6 +79,7 @@ class Cappdata
   CvRenderer      *m_violin_renderer;
   CpRenderer      *m_piano_renderer;
   CgRenderer      *m_guitar_renderer;
+  CgRendererDropD *m_guitar_renderer_dropD;
 
   pthread_t        m_threadnetwork;
 

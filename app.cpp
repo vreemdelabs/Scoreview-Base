@@ -171,11 +171,13 @@ Cappdata::Cappdata(int width, int height):
   m_pScorePlacementViolin = new CScorePlacementViolin();
   m_pScorePlacementPiano  = new CScorePlacementPiano();
   m_pScorePlacementGuitar = new CScorePlacementGuitar();
+  m_pScorePlacementGuitarDropD = new CScorePlacementGuitarDropD();
   m_pScorePlacement = get_instrumentPlacement(m_pcurrent_instrument->get_name());
   // Score editor
   m_pScoreEditViolin = new CscoreEdit(&m_kstates);
   m_pScoreEditPiano  = new CscoreEditPiano(&m_kstates);
   m_pScoreEditGuitar = new CscoreEditGuitar(&m_kstates);
+  m_pScoreEditGuitarDropD = new CscoreEditGuitarDropD(&m_kstates);
   m_pScoreEdit = get_instrumentEdit(m_pcurrent_instrument->get_name());
   m_note_selection.cmdlist.clear();
   m_note_selection.play_timecode = m_note_selection.box.start_tcode = m_note_selection.box.stop_tcode = -1;
@@ -196,9 +198,11 @@ Cappdata::~Cappdata()
   delete m_pScorePlacementViolin;
   delete m_pScorePlacementPiano;
   delete m_pScorePlacementGuitar;
+  delete m_pScorePlacementGuitarDropD;
   delete m_pScoreEditViolin;
   delete m_pScoreEditPiano;
   delete m_pScoreEditGuitar;
+  delete m_pScoreEditGuitarDropD;
   delete m_pScoreRenderer;
   delete m_pscore;
   delete[] m_shared_data.pattackdata;
@@ -326,6 +330,8 @@ CScorePlacement* Cappdata::get_instrumentPlacement(std::string instrument_name)
     return m_pScorePlacementPiano;
   if (instrument_name == string("guitar"))
     return m_pScorePlacementGuitar;
+  if (instrument_name == string("guitar_dropD"))
+    return m_pScorePlacementGuitarDropD;
   return m_pScorePlacementViolin;
 }
 
@@ -337,6 +343,8 @@ CscoreEdit* Cappdata::get_instrumentEdit(std::string instrument_name)
     return m_pScoreEditPiano;
   if (instrument_name == string("guitar"))
     return m_pScoreEditGuitar;
+  if (instrument_name == string("guitar_dropD"))
+    return m_pScoreEditGuitarDropD;
   return m_pScoreEditViolin;
 }
 

@@ -58,8 +58,9 @@ class CgRenderer : public CFingerRenderer
   void print_current_timecodes(Cgfxarea *pw, int color, double timecode, double viewtime);
   void Draw_the_practice_end(t_coord pos, t_coord dim, t_limits *pl);
 
- private:
+ protected:
   int  m_baseAbsNote[GUITAR_STRINGS];
+ private:
   int  m_playedy[GUITAR_STRINGS];
 
   t_fcoord m_string_center; // The point where the strings would join
@@ -81,5 +82,12 @@ class CgRenderer : public CFingerRenderer
   std::list<t_note_drawing> m_drawlist;
 
   CMeshList *m_mesh_list;
+};
+
+class CgRendererDropD : public CgRenderer
+{
+ public:
+  CgRendererDropD(CGL2Dprimitives *pgfxprimitives, TTF_Font *pfont, double viewtime, CMeshList *pmesh_list);
+  ~CgRendererDropD();
 };
 

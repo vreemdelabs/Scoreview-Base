@@ -222,6 +222,8 @@ class Cappdata
   CscoreEdit            *m_pScoreEditPiano;
   CScorePlacementGuitar *m_pScorePlacementGuitar;
   CscoreEdit            *m_pScoreEditGuitar;
+  CScorePlacementGuitar *m_pScorePlacementGuitarDropD;
+  CscoreEdit            *m_pScoreEditGuitarDropD;
 
   t_note_selection m_note_selection;
 

@@ -402,3 +402,64 @@ void CScorePlacementGuitar::place_notes(std::list<CMesure*> *pml, CInstrument *p
     }
   place_beams(pnote_placement_list, BLACK); // Also used for flags
 }
+
+//----------------------------------------------------------------------------------------------------------------------
+// Drop D version
+
+CScorePlacementGuitarDropD::CScorePlacementGuitarDropD(int notenum):CScorePlacementGuitar(notenum)
+{
+  delete m_phand;
+  m_phand = new CInstrumentHandGuitarDropD();
+}
+
+CScorePlacementGuitarDropD::~CScorePlacementGuitarDropD()
+{
+  delete m_phand;
+}
+
+void CScorePlacementGuitarDropD::place_TAB_segments(float xstart, float length)
+{
+  t_lsegment         lsegment;
+  int                i;
+  float              border;
+  t_string_placement txtpl;
+
+  lsegment.dim.x = length;
+  lsegment.dim.y = 0.;
+  lsegment.thickness = 1. * m_vzoom;
+  border = 4 * m_zradius;
+  lsegment.pos.x = xstart + border;
+  txtpl.pos.x = xstart;
+  txtpl.dim.x = border;
+  txtpl.dim.y = 1.8 * m_zradius;
+  for (i = 0; i < 6; i++)
+    {
+      lsegment.pos.y = get_string_segment_y(i);
+      m_lsegment_list.push_back(lsegment);
+      txtpl.pos.y = lsegment.pos.y - txtpl.dim.y / 2.;
+      switch (i)
+	{
+	case 0:
+	  txtpl.txt = string("E");
+	  break;
+	case 1:
+	  txtpl.txt = string("B");
+	  break;
+	case 2:
+	  txtpl.txt = string("G");
+	  break;
+	case 3:
+	  txtpl.txt = string("D");
+	  break;
+	case 4:
+	  txtpl.txt = string("A");
+	  break;
+	case 5:
+	  txtpl.txt = string("D");
+	  break;
+	}
+      txtpl.color = BLACK;
+      txtpl.pnf = NULL;
+      m_txt_list.push_back(txtpl);
+    }
+}

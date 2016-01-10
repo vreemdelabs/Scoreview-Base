@@ -38,9 +38,20 @@ class CScorePlacementGuitar: public CScorePlacement
   void  place_portee();
   void  place_note_segments(int octave, int note, float x);
 
+ protected:
   float get_string_segment_y(int string);
-  void  place_TAB_segments(float xstart, float length);
+  virtual void  place_TAB_segments(float xstart, float length);
+ private:
   void  place_segment_portee(int note, int octave, float xstart, float length);
   void  place_TAB_notes(std::list<CMesure*> *pml, CNote *pn);
+};
+
+class CScorePlacementGuitarDropD: public CScorePlacementGuitar
+{
+ public:
+  CScorePlacementGuitarDropD(int notenum = 48);
+  ~CScorePlacementGuitarDropD();
+
+  void place_TAB_segments(float xstart, float length);
 };
 

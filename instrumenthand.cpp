@@ -501,3 +501,176 @@ int CInstrumentHandGuitar::get_string_abs_note(int string)
   return absnote;
 }
 
+//-----------------------------------------------------------------------------------------------------
+// Guitar, wohooo
+
+CInstrumentHandGuitarDropD::CInstrumentHandGuitarDropD():
+  m_cnotes_per_string(24),
+  m_cstring_num(6)
+{
+  int note, octave;
+
+  octave = 6;
+  note = 4;
+  m_max_absnote = m_f2n.note2frequ(note, octave);
+  // Mi E4
+  octave = 4;
+  note = 4;
+  m_stringf[0] = m_f2n.note2frequ(note,  octave);
+  // Si B3
+  octave = 3;
+  note = 11;
+  m_stringf[1] = m_f2n.note2frequ(note,  octave);
+  // Sol G3
+  octave = 3;
+  note = 7;
+  m_stringf[2] = m_f2n.note2frequ(note,  octave);  
+  // Ré  D3
+  octave = 3;
+  note = 2;
+  m_stringf[3] = m_f2n.note2frequ(note,  octave);
+  m_min_absnote = m_stringf[3];
+  // La  A2
+  octave = 2;
+  note = 9;
+  m_stringf[4] = m_f2n.note2frequ(note,  octave);
+  m_min_absnote = m_stringf[3];
+  // Ré  D2
+  octave = 2;
+  note = 2;
+  m_stringf[5] = m_f2n.note2frequ(note,  octave);
+  m_min_absnote = m_stringf[5];
+}
+
+CInstrumentHandGuitarDropD::~CInstrumentHandGuitarDropD()
+{
+}
+
+// The lowest string available for the note
+int CInstrumentHandGuitarDropD::get_first_string(float f)
+{
+  int i;
+
+  if (!is_in_range(f))
+    return -1;
+  for (i = 0; i < m_cstring_num; i++)
+    {
+      if (m_stringf[i] < f + 0.4)
+	return i;
+    }
+  return -1;
+}
+
+int CInstrumentHandGuitarDropD::get_next_string(float f, int string_number)
+{
+  int string_absnote;
+  int absnote;
+
+  if (!is_in_range(f))
+    return -1;
+  if (string_number < 0 || string_number >= m_cstring_num)
+    return string_number;
+  string_absnote = m_f2n.frequ2note(m_stringf[string_number + 1]);
+  absnote = m_f2n.frequ2note(f);
+  if (abs(absnote - string_absnote) < m_cnotes_per_string) // Check if is not to high on the string
+    return string_number + 1;
+  return string_number;
+}
+
+int CInstrumentHandGuitarDropD::get_prev_string(float f, int string_number)
+{
+  if (!is_in_range(f))
+    return -1;
+  if (string_number <= 0)
+      return 0;
+  //printf("compare string %d freq=%f with f=%f\n", string_number - 1, m_stringf[string_number - 1], f + 0.4);
+  if (m_stringf[string_number - 1] < f + 0.4)
+    return string_number - 1;
+  return string_number;
+}
+
+int CInstrumentHandGuitarDropD::get_proper_string(float f, int string_number)
+{
+  int string_absnote;
+  int absnote;
+  int diff;
+
+  if (!is_in_range(f))
+    return -1;
+  if (string_number < 0 || string_number >= m_cstring_num)
+    return get_first_string(f);
+  // If f can be played on this string, keep it
+  string_absnote = m_f2n.frequ2note(m_stringf[string_number]);
+  absnote = m_f2n.frequ2note(f);
+  diff = (absnote - string_absnote);
+  if (diff < m_cnotes_per_string && diff >= 0) // Check if is not to high on the string
+    return string_number;
+  // Else return the first possible string
+  return get_first_string(f);
+}
+
+string CInstrumentHandGuitarDropD::get_string_text(int string_number)
+{
+  if (string_number == 0)
+    return string("string 1"); // E4
+  if (string_number == 1)
+    return string("string 2"); // B3
+  if (string_number == 2)
+    return string("string 3"); // G3
+  if (string_number == 3)
+    return string("string 4"); // D3
+  if (string_number == 4)
+    return string("string 5"); // A2
+  if (string_number == 5)
+    return string("string 6"); // D2
+  return string("Out of range");
+}
+
+int CInstrumentHandGuitarDropD::get_color(int string_number)
+{
+  int color;
+
+  switch (string_number)
+    {
+    case 0:
+      color = STRING0_COLOR;
+      break;
+    case 1:
+      color = STRING1_COLOR;
+      break;
+    case 2:
+      color = STRING2_COLOR;
+      break;
+    case 3:
+      color = STRING3_COLOR;
+      break;
+    case 4:
+      color = STRING4_COLOR;
+      break;
+    case 5:
+      color = STRING5_COLOR;
+      break;
+    default:
+      color = NOTE_COLOR;
+      break;
+    }
+  return color;
+}
+
+int CInstrumentHandGuitarDropD::get_string_num()
+{
+  return m_cstring_num;
+}
+
+int CInstrumentHandGuitarDropD::get_string_abs_note(int string)
+{
+  float freq;
+  int   absnote;
+
+  if (string >= m_cstring_num)
+    return 0;
+  freq = m_stringf[string];
+  absnote = m_f2n.frequ2note(freq);
+  return absnote;
+}
+

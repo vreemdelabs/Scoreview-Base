@@ -770,3 +770,23 @@ void CgRenderer::render(Cgfxarea *pw, CScore *pscore, std::string instrument_nam
   print_current_timecodes(pw, WHITE, pl->current, m_viewtime);
 }
 
+//-------------------------------------------------------------------------------
+// Drop D version
+
+CgRendererDropD::CgRendererDropD(CGL2Dprimitives *pgfxprimitives, TTF_Font *pfont, double viewtime, CMeshList *pmesh_list):CgRenderer(pgfxprimitives, pfont, viewtime, pmesh_list)
+{
+  int octave;
+  int note;
+
+  //
+  // D2
+  octave = 2;
+  note = 2;
+  m_baseAbsNote[5] = m_f2n.notenum(octave, note);
+}
+
+CgRendererDropD::~CgRendererDropD()
+{
+  
+}
+

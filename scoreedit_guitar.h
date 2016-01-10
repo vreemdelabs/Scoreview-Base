@@ -26,3 +26,11 @@ class CscoreEditGuitar: public CscoreEdit
  private:
   bool change_chord_frequency_element(CScorePlacement *pplacement, CNote *pnote, float frequency, int element_num, bool btimechange);
 };
+
+class CscoreEditGuitarDropD: public CscoreEditGuitar
+{
+ public:
+  CscoreEditGuitarDropD(Ckeypress *pkstates);
+  ~CscoreEditGuitarDropD();
+};
+

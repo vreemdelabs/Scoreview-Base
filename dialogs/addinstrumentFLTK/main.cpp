@@ -142,6 +142,9 @@ void add_instru_callback(Fl_Widget *pwi, void *pdata)
     case 2:
       name = string("guitar");
       break;
+    case 3:
+      name = string("guitar_dropD");
+      break;
     default:
       name = string("unknown instrument");
       break;
@@ -325,6 +328,7 @@ int main(int argc, char **argv)
       pchoice->add(" Violin");
       pchoice->add(" Piano");
       pchoice->add(" Guitar");
+      pchoice->add(" Guitar drop D tuning");
       pchoice->value(0);
       //pchoice->add("Violin", violin, menu_selection_callback, &app_data);
       //pchoice->add("Grand piano", piano, menu_selection_callback, &app_data);
