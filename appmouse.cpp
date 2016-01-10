@@ -784,7 +784,7 @@ void Cappdata::create_filter_play_message(t_coord boxstart, int x, int y, t_coor
       cmd.fhicut[0] = getSpectrum_freq_fromY(yp, pos, dim, fbase, fmax);
       yp = boxstart.y > y? boxstart.y : y;
       cmd.flocut[0] = getSpectrum_freq_fromY(yp, pos, dim, fbase, fmax);
-      if (fabs(cmd.fhicut - cmd.flocut) > 4.) // Hz
+      if (fabs(cmd.fhicut[0] - cmd.flocut[0]) > 1.) // Hz
 	{
 	  SLOCK;
 	  plist->push_front(cmd);
@@ -832,14 +832,17 @@ void Cappdata::create_filter_play_message_from_track(int xstart, int xstop, t_co
     {
       cmd.fhicut[0] = fmax;
       cmd.flocut[0] = fbase;
-      SLOCK;
-      plist->push_front(cmd);
-      SUNLOCK;
+      if (fabs(cmd.fhicut[0] - cmd.flocut[0]) > 1.) // Hz
+	{
+	  SLOCK;
+	  plist->push_front(cmd);
+	  SUNLOCK;
+	}
     }
   wakeup_bandpass_thread();
 }
 
-void Cappdata::set_cmd_bands(t_audioOutCmd &cmd, float basef, float fbase, float fmax)
+bool Cappdata::set_cmd_bands(t_audioOutCmd &cmd, float basef, float fbase, float fmax)
 {
   int   j;
   int   octave;
@@ -847,7 +850,9 @@ void Cappdata::set_cmd_bands(t_audioOutCmd &cmd, float basef, float fbase, float
   float ferr;
   float notefh;
   float notefl;
+  bool  bnullband;
 
+  bnullband = false;
   for (j = 1; j <= HARMONICS && ((float)j * basef) < fmax; j++)
     {
       // Note limit as y coordinates
@@ -858,8 +863,13 @@ void Cappdata::set_cmd_bands(t_audioOutCmd &cmd, float basef, float fbase, float
       //printf("j == %d adding %f %f\n.", j, notefl, notefh);
       cmd.fhicut[j - 1] = notefh;
       cmd.flocut[j - 1] = notefl;
+      if (fabs(notefh - notefl) <= 1.)
+	{
+	  bnullband = true;
+	}
     }
   cmd.bands = j - 1;
+  return (!bnullband);
 }
 
 // Plays second to 16th harmonics of a note
@@ -897,10 +907,12 @@ void Cappdata::create_filter_play_harmonics_message(int x, int y, t_coord pos, t
   cmd.pnote = NULL;
   if (fabs(cmd.stop - cmd.start) > 0.005)
     {
-      set_cmd_bands(cmd, basef, fbase, fmax);
-      SLOCK;
-      plist->push_front(cmd);
-      SUNLOCK;
+      if (set_cmd_bands(cmd, basef, fbase, fmax))
+	{
+	  SLOCK;
+	  plist->push_front(cmd);
+	  SUNLOCK;
+	}
     }
   wakeup_bandpass_thread();
 }

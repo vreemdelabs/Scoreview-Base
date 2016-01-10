@@ -104,7 +104,7 @@ class Cappdata
   void note_from_spectrumy(t_coord pos, t_coord dim, int y, int *pnote, int *poctave, float fbase, float fmax);
   void set_cmd_start_stop(t_audioOutCmd &cmd, t_coord pos, t_coord dim, int xstart, int x);
   void create_filter_play_message(t_coord boxstart, int x, int y, t_coord pos, t_coord dim);
-  void set_cmd_bands(t_audioOutCmd &cmd, float basef, float fbase, float fmax);
+  bool set_cmd_bands(t_audioOutCmd &cmd, float basef, float fbase, float fmax);
   void create_filter_play_harmonics_message(int x, int y, t_coord pos, t_coord dim);
   void create_filter_play_harmonics_message(CNote *pnote, double playdelay, bool bloopdata, std::list<t_audioOutCmd*> *pcmdlist);
   void render_sound_strips_progress(Cgfxarea *pw, double currentime, double starttime, double viewtime);

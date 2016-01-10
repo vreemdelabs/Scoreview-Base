@@ -112,7 +112,7 @@ void filter_signal(t_audioOutCmd *pcmd, float **psamples, int samplenum, int sam
 	wrkbuffer[i] = in[i];
       bandwidth = pcmd->fhicut[band] - pcmd->flocut[band];
       frequency = pcmd->fhicut[band] - (bandwidth / 2.);
-      //printf("filtering band=%d f=%f bandwidth=%f\n", band, frequency, bandwidth);
+      //printf("filtering band=%d f=%f bandwidth=%f samplenum=%d\n", band, frequency, bandwidth, samplenum);
       DSPCPPfilter_pass_band_Butterworth(wrkbuffer, samplenum, samplerate, frequency, bandwidth);
       if (pcmd->bsubstract)
 	{
