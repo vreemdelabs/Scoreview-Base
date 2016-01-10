@@ -28,6 +28,8 @@
 #include <list>
 #include <vector>
 
+#include <tinyxml.h>
+
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 
@@ -40,6 +42,8 @@
 #include "gfxareas.h"
 #include "mesh.h"
 #include "gl2Dprimitives.h"
+
+#include "cfgfile.h"
 #include "score.h"
 #include "f2n.h"
 #include "pictures.h"
@@ -78,7 +82,11 @@ void main_loop(Cappdata *app)
 #ifdef USE_LOG_FILE
 void open_log_file()
 {
-  freopen("applog.txt", "w", stdout);
+  Cxml_cfg_file_decoder cfgfile;
+  string                user_home;
+
+  user_home = cfgfile.get_user_config_path() + string("applog.txt");
+  freopen(user_home.c_str(), "w", stdout);
 }
 
 void close_log_file()
