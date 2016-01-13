@@ -180,6 +180,7 @@ void CscoreEdit::mouse_left_down(CScore *pscore, CInstrument *pcur_instru, CScor
 		  };
 	      }
 	    assert(pnotesk != NULL);
+	    printf("set modified note, onnote\n");
 	    m_editstate.pmodified_note = pnotesk->pnote;
 	    m_editstate.modified_note_start_cpy = *pnotesk->pnote;
 	  }
@@ -406,6 +407,7 @@ bool CscoreEdit::mouse_move(CScore *pscore, CScorePlacement *pplacement, t_coord
       if (pnotesk != NULL)
 	{
 	  m_state = onnote;
+	  printf("set modified note wait\n");
 	  m_editstate.pmodified_note = pnotesk->pnote;
 	  if (!m_pks->is_pressed('d'))
 	    {
@@ -464,6 +466,7 @@ bool CscoreEdit::mouse_move(CScore *pscore, CScorePlacement *pplacement, t_coord
 	}
       else
 	{
+	  printf("set modified note\n");
 	  m_editstate.pmodified_note = pnotesk->pnote;
 	  if (!m_pks->is_pressed('d'))
 	    {
@@ -670,15 +673,13 @@ bool CscoreEdit::mouse_left_up(CScore *pscore, CInstrument *pcur_instru, CScoreP
 	pinst->sort();
 	fuse_chords(pplacement, pinst);
 	//
-	m_editstate.changed_notes_list.push_front(m_editstate.pmodified_note);
+	//m_editstate.changed_notes_list.push_front(pnotem_editstate.pmodified_note); Bug because of duplicates: change in freq & time + change into a chord
 	bchange = true;
       }
       break;
     case notelen:
       mouse_move(pscore, pplacement, mouse_coordinates);
-      fuse_chords(pplacement, pinst);
       m_editstate.blrcursor = false;
-      m_editstate.changed_notes_list.push_front(m_editstate.pmodified_note);
       bchange = true;
       break;
     case movebar:
@@ -701,7 +702,6 @@ bool CscoreEdit::mouse_left_up(CScore *pscore, CInstrument *pcur_instru, CScoreP
       if (pinst)
 	{
 	  m_editstate.deleted_notes_list.push_front(m_editstate.pmodified_note);
-	  //pinst->delete_note(m_editstate.pmodified_note);
 	}
       bchange = true;
       break;

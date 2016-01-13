@@ -41,6 +41,7 @@ void CscoreEdit::remove_duplicate_frequencies(CNote *pnote)
 #endif
   pnote->m_freq_list.sort();
   pnote->m_freq_list.unique();
+  assert(pnote->m_freq_list.size() > 0);
 }
 
 void CscoreEdit::fuse_into_chord(CNote *pref_note, CNote *pdel_note, CInstrument *pinst)
@@ -60,22 +61,22 @@ void CscoreEdit::fuse_into_chord(CNote *pref_note, CNote *pdel_note, CInstrument
       iter++;
     }
   remove_duplicate_frequencies(pref_note);
-  // Remove the note from the score
-//  delete pdel_note;
-//  pinst->m_Note_list.remove(pdel_note);
+  // Remove the note from the score, but it will be deleted later, when sending the update to the practice view
+  pinst->m_Note_list.remove(pdel_note);
+  //  delete pdel_note;
 #ifdef _DEBUG
   printf("chordfuse done\n");
-#endif
+  assert(pref_note->m_freq_list.size() > 0);
+  assert(pdel_note->m_freq_list.size() > 0);
   int i = 0;
   iter = pref_note->m_freq_list.begin();
   while (iter != pref_note->m_freq_list.end())
     {
-#ifdef _DEBUG
       printf("element %d is =%f\n", i, (*iter).f);
-#endif
       i++;
       iter++;
     }
+#endif
 }
 
 bool CscoreEdit::change_chord_frequency_element(CScorePlacement *pplacement, CNote *pnote, float frequency, int element_num, bool btimechange)
@@ -112,6 +113,7 @@ bool CscoreEdit::change_chord_frequency_element(CScorePlacement *pplacement, CNo
   // Time modification
   if (bchange || btimechange)
     {
+      //printf(" changing %x\n", pnote);
       m_editstate.changed_notes_list.push_front(pnote);
       return true;
     }
@@ -122,10 +124,10 @@ bool CscoreEdit::move_note_or_chord(CScorePlacement *pplacement)
 {
   t_note_sketch *pmodified_note_sketch;
   t_note_sketch *pns;
-  float         new_freq;
-  double        move_time, tchange;
-  bool          boverlaping;
-  bool          btimechange;
+  float          new_freq;
+  double         move_time, tchange;
+  bool           boverlaping;
+  bool           btimechange;
 
 #ifdef _DEBUG
   printf("movenote\n");
@@ -192,7 +194,7 @@ bool CscoreEdit::compare_note_sketches(const t_note_sketch *pfirst, const t_note
   return (pfirst->pnote->m_time < psecond->pnote->m_time);
 }
 
-// Called when a note duration is changed or when a note is moved suposedly on another one
+// Called when a note duration is changed or when a note is moved on another one
 void CscoreEdit::fuse_chords(CScorePlacement *pplacement, CInstrument *pinst)
 {
   std::list<t_note_sketch*>           nsklist;
@@ -236,8 +238,16 @@ void CscoreEdit::fuse_chords(CScorePlacement *pplacement, CInstrument *pinst)
 #ifdef _DEBUG
 		      printf("fusing\n");
 #endif
-		      m_editstate.deleted_notes_list.push_front(pns_next->pnote); // Deleted note
 		      fuse_into_chord(pns->pnote, pns_next->pnote, pinst);
+		      //printf("deleting a note with %d frequencies\n", (int)pns_next->pnote->m_freq_list.size());
+		      //printf (" pointer del = %x\n", pns_next->pnote);
+		      m_editstate.deleted_notes_list.push_front(pns_next->pnote); // Deleted note
+		      // If the deleted note is also in the modified notes becaise it also moved, then
+		      // remove it form the modified notes
+		      m_editstate.changed_notes_list.remove(pns_next->pnote);
+		      //printf("changing a note with %d frequencies\n", (int)pns->pnote->m_freq_list.size());
+		      //printf (" pointer add = %x\n", pns->pnote);
+		      m_editstate.changed_notes_list.push_front(pns->pnote); // This note received the frequency of the previous
 		      return ; // Because the internal list iterator is a mess here, and only one note moved
 		    }
 		}
@@ -259,7 +269,7 @@ CNote* CscoreEdit::split_chord(CNote *pnote, int freqnum)
   pnew_note->m_freq_list.clear();
   iter = pnote->m_freq_list.begin();
   i = 0;
-  while (iter != pnew_note->m_freq_list.end())
+  while (iter != pnote->m_freq_list.end())
     {
       if (i != freqnum)
 	{

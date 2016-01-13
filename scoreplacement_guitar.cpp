@@ -414,7 +414,7 @@ CScorePlacementGuitarDropD::CScorePlacementGuitarDropD(int notenum):CScorePlacem
 
 CScorePlacementGuitarDropD::~CScorePlacementGuitarDropD()
 {
-  delete m_phand;
+  //delete m_phand; <- deleted in the parent class, shitty design but quick
 }
 
 void CScorePlacementGuitarDropD::place_TAB_segments(float xstart, float length)

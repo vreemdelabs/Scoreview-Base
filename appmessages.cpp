@@ -327,7 +327,10 @@ void Cappdata::send_note_to_practice_view(CNote *pn, bool deletenote)
 #ifdef _DEBUG
       printf("sending note rem add command to practice:%s", command.c_str());
 #endif
-      m_pserver->Send_to_dialogs_with_delay(message_send_remadd_note, msg, size);
+      if (deletenote)
+	m_pserver->Send_to_dialogs(message_send_remadd_note, msg, size);
+      else
+	m_pserver->Send_to_dialogs_with_delay(message_send_remadd_note, msg, size);
     }
 }
 
@@ -363,25 +366,36 @@ void Cappdata::update_practice_view()
   if (pe != NULL)
     {
       // Note changes
+      if (pe->changed_notes_list.size())
+	{
+	  pe->changed_notes_list.sort();
+	  pe->changed_notes_list.unique();
+	  iter = pe->changed_notes_list.begin();
+	  while (iter != pe->changed_notes_list.end())
+	    {
+	      //printf (" pointer = %x\n", (*iter)); 
+	      assert(((*iter)->m_freq_list.size() > 0));
+		{
+		  if (bpractice_enabled)
+		    send_note_to_practice_view(*iter, false);
+		  iter = pe->changed_notes_list.erase(iter);
+		}
+	    }
+	}
+      // Changing the current note and then delete it because it has been inserted in a chord, gives
+      // a segfault if deleted first.
       if (pe->deleted_notes_list.size())
 	{
+	  pe->deleted_notes_list.sort();
+	  pe->deleted_notes_list.unique();
 	  iter = pe->deleted_notes_list.begin();
 	  while (iter != pe->deleted_notes_list.end())
 	    {
+	      assert((*iter)->m_freq_list.size() > 0);
 	      if (bpractice_enabled)
 		send_note_to_practice_view(*iter, true);
 	      m_pcurrent_instrument->delete_note(*iter);
 	      iter = pe->deleted_notes_list.erase(iter);
-	    }
-	}
-      if (pe->changed_notes_list.size())
-	{
-	  iter = pe->changed_notes_list.begin();
-	  while (iter != pe->changed_notes_list.end())
-	    {
-	      if (bpractice_enabled)
-		send_note_to_practice_view(*iter, false);
-	      iter = pe->changed_notes_list.erase(iter);
 	    }
 	}
       // Measure changes
@@ -429,7 +443,6 @@ void Cappdata::update_practice_stop_time(bool reload)
   mtype = reload? practice_update : practice_stop_at;
   send_practice_message(mtype, tref, tracklen, F_MAX, F_BASE, viewtime, practicespeed);
 }
-
 
 void Cappdata::printfscore()
 {

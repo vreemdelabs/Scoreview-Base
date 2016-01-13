@@ -468,7 +468,6 @@ void CgRenderer::check_visible_notes(Cgfxarea *pw, CScore *pscore, t_limits *pl)
   int                                 i;
 
   m_drawlist.clear();
-//  for (i = 0; i < GUITAR_NOTES_PER_STRING; i++)
   m_segments.clear();
   for (i = 0; i < GUITAR_STRINGS; i++)
     m_playedy[i] = -1;
@@ -704,7 +703,7 @@ void CgRenderer::add_coming_notes_rectangles()
       nd.w += 2 * offset;
       nd.h += 2 * offset;
       nd.x -= offset;
-      nd.y -= offset;      
+      nd.y -= offset;
       nd.rad = 0;
       m_drawlist.push_back(nd);
       // Draw the notes and chords rectangles
@@ -733,7 +732,6 @@ void CgRenderer::add_coming_notes_rectangles()
 	    }
 	  strsiter++;
 	}
-
       citer++;
     }
   m_segments.clear();

@@ -1229,7 +1229,7 @@ void Cappdata::render_gui()
 	  t_edit_state* pedit_state = m_pScoreEdit->get_edit_state();
 	  if (pedit_state->pmodified_note != NULL)
 	    {
-	      //printf("rendering tmp note\n");
+	      //printf("rendering tmp note %x\n", pedit_state->pmodified_note);
 	      render_measures_on_spectrum(pw, m_pscore, starttime, viewtime);
 	      render_sel_note_square(pw, pedit_state->pmodified_note, starttime, viewtime);
 	    }

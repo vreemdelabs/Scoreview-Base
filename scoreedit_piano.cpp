@@ -107,8 +107,9 @@ void CscoreEditPiano::fuse_chords_by_key(CScorePlacement *pplacement, CInstrumen
 		      pplacement->get_key(pns->pnote) == pplacement->get_key(pns_next->pnote))
 		    {
 		      printf("fusing\n");
-		      m_editstate.deleted_notes_list.push_front(pns_next->pnote); // Deleted note
 		      fuse_into_chord(pns->pnote, pns_next->pnote, pinst);
+		      m_editstate.deleted_notes_list.push_front(pns_next->pnote); // Deleted notex
+		      m_editstate.changed_notes_list.push_front(pns->pnote); // This note received the frequency of the previous
 		      return ; // Because the internal list iterator is a mess here, and only one note moved
 		    }
 		}
