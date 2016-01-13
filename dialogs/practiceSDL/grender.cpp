@@ -115,24 +115,13 @@ void CgRenderer::draw_finger_board(Cgfxarea *pw, erlvl level)
   dim.y = note_2_y(idim, &notef);
   if (level == lvl_fingerboard)
     {
-/*
-      pmesh = m_mesh_list->get_mesh(string("pegbox"));
-      m_gfxprimitives->triangle_mesh2D(pos, dim, pmesh, TABLE_COLOR, bantialiased);
-      pmesh = m_mesh_list->get_mesh(string("pegbox2"));
-      m_gfxprimitives->triangle_mesh2D(pos, dim, pmesh, PEGBOX_COLOR, bantialiased);
-*/
       pmesh = m_mesh_list->get_mesh(string("gfboard"));
       m_gfxprimitives->triangle_mesh2D(pos, dim, pmesh, EBONY_COLOR, bantialiased);
-      //pos.y += 10;
-/*
-      pmesh = m_mesh_list->get_mesh(string("vfingerboardside"));
-      m_gfxprimitives->triangle_mesh2D(pos, dim, pmesh, EBONY_SIDE_COLOR, bantialiased);
-*/
     }
   // Frets
   bantialiased = true;
   radius = 0.004 * dim.y;
-  for (i = 0; i < 24; i++)
+  for (i = 0; i < GUITAR_NOTES_PER_STRING; i++)
     {
       notef.string = 0;
       notef.f = m_f2n.note2frequ(absnote + i);
@@ -359,21 +348,14 @@ void CgRenderer::add_drawings(t_coord dim, int y, CNote *pn, t_notefreq *pnf, t_
   float          pix_s;
   float          passed_viewtime;
   t_notefreq     notef;
+  t_note_segment segment;
 
   if ((pl->lof >= pnf->f || pnf->f >= pl->hif))
     {
       return;
     }
   timecode = pl->current;
-  //noteheigth = (dim.y * 88. / 100) / 24.; // average of 24 notes on the fingerboard
-/*
-  absnote = m_f2n.notenum(4, 4); // E4
-  notef.string = 0;
-  notef.f = m_f2n.note2frequ(absnote + 12);
-  noteheigth = note_2_y(dim, &notef);
-  notef.f = m_f2n.note2frequ(absnote + 11);
-  noteheigth = noteheigth - note_2_y(dim, &notef);
-*/
+  // Get the note info
   notef = *pnf;
   noteheigth = note_2_y(dim, &notef);
   absnote = m_f2n.frequ2note(notef.f);
@@ -382,12 +364,29 @@ void CgRenderer::add_drawings(t_coord dim, int y, CNote *pn, t_notefreq *pnf, t_
   //
   xt0r = get_time0_x_limit_from_y(dim, y, false);
   xt0l = get_time0_x_limit_from_y(dim, y, true);
-  pix_s = xt0l / m_viewtime;
+  pix_s = (dim.x - xt0r) / m_viewtime;
   passed_viewtime = xt0l * pix_s;
   if (pn->m_time + pn->m_duration >= timecode && pn->m_time < timecode + m_viewtime)
     {
       //
-      // Coming note, right segment
+      // Coming note, add them to the segment list
+      nd.w = pix_s * pn->m_duration;
+      pix_s = (dim.x - xt0r) / m_viewtime;
+      nd.x = xt0r + pix_s * (pn->m_time - timecode);
+      if (nd.x < xt0r - cmarg)
+	{
+	  newx = xt0r - cmarg;
+	  nd.w = nd.w - abs(nd.x - newx);
+	  nd.x = newx;
+	}
+      segment.xbegin = nd.x;
+      segment.xend   = nd.x + nd.w;
+      segment.y = y - noteheigth;
+      segment.height = noteheigth;
+      segment.nf = *pnf;
+      segment.fret = m_f2n.frequ2note(pnf->f) - m_baseAbsNote[pnf->string];
+      m_segments.push_front(segment);
+#ifdef CLOF
       nd.lvl = lvl_background;
       nd.bcircle = false;
       nd.string = pnf->string;
@@ -413,6 +412,7 @@ void CgRenderer::add_drawings(t_coord dim, int y, CNote *pn, t_notefreq *pnf, t_
       else
 	nd.rad = nd.h / 2.5;
       m_drawlist.push_back(nd);
+#endif
       //printf("adding %s note x=%d y=%d w=%d h=%d dimw=%d dimh=%d\n", "coming", nd.x, nd.y, nd.w, nd.h, dim.x, dim.y);
       // Add a gray little circle
       if (fabs(m_f2n.note2frequ(m_baseAbsNote[pnf->string]) - pnf->f) > 0.5)
@@ -425,7 +425,7 @@ void CgRenderer::add_drawings(t_coord dim, int y, CNote *pn, t_notefreq *pnf, t_
 	  nd.rad = (float)noteheigth * (proxi / m_viewtime);
 	  nd.string = pnf->string;
 	  nd.color = STRING_GRAY;
-	  nd.y = y - noteheigth + nd.rad;;
+	  nd.y = y - noteheigth / 2.;
 	  nd.x = string_x(dim, nd.string, nd.y);
 	  m_drawlist.push_back(nd);
 	}
@@ -454,35 +454,22 @@ void CgRenderer::add_drawings(t_coord dim, int y, CNote *pn, t_notefreq *pnf, t_
   if (false && pn->m_time < timecode && pn->m_time + pn->m_duration > timecode - passed_viewtime)
     {
       // Passed note segment
-      nd.lvl = lvl_background;
-      nd.bcircle = false;
-      nd.string = pnf->string;
-      nd.color = string_to_color(pnf);
-      nd.y = y;
-      pix_s = xt0l / m_viewtime;
-      nd.x = xt0l + pix_s * (timecode - pn->m_time);
-      nd.w = pix_s * (pn->m_time + pn->m_duration);
-      nd.w = nd.w < xt0l? xt0l : nd.w;
-      nd.h = noteheigth;
-      nd.rad = nd.h < nd.w? nd.h : nd.w;
-      nd.rad /= 3.;
-      m_drawlist.push_back(nd);
-      //printf("adding %s note x=%d y=%d w=%d h=%d dimw=%d dimh=%d\n", "passed", nd.x, nd.y, nd.w, nd.h, dim.x, dim.y);
     }
 }
 
 void CgRenderer::check_visible_notes(Cgfxarea *pw, CScore *pscore, t_limits *pl)
 {
-  std::list<t_notefreq>::iterator notefreq_iter;
-  CInstrument                    *pi;
-  CNote                          *pn;
-  t_coord                         pos, dim;
-  double                          timecode;
-  int                             y;
-  int                             i;
+  std::list<t_notefreq>::iterator     notefreq_iter;
+  CInstrument                        *pi;
+  CNote                              *pn;
+  t_coord                             pos, dim;
+  double                              timecode;
+  int                                 y;
+  int                                 i;
 
   m_drawlist.clear();
-  //return ;
+//  for (i = 0; i < GUITAR_NOTES_PER_STRING; i++)
+  m_segments.clear();
   for (i = 0; i < GUITAR_STRINGS; i++)
     m_playedy[i] = -1;
   pw->get_pos(&pos);
@@ -503,12 +490,260 @@ void CgRenderer::check_visible_notes(Cgfxarea *pw, CScore *pscore, t_limits *pl)
 	break;
       pn = pi->get_next_note_reverse();
     }
+  concat_segments();
+}
+
+bool CgRenderer::overlaping(t_note_segment *p1, t_note_segment *p2)
+{
+  bool boverlaping;
+
+  boverlaping = ((p2->xbegin >= p1->xbegin) && (p2->xbegin <= p1->xend));
+  boverlaping = boverlaping || ((p2->xend >= p1->xbegin) && (p2->xend <= p1->xend));
+  boverlaping = boverlaping || ((p1->xend >= p2->xbegin) && (p1->xend <= p2->xend));
+  boverlaping = boverlaping && (p1->y == p2->y);
+  return boverlaping;
+}
+
+bool CgRenderer::compare_note_segments(const t_note_segment first, const t_note_segment second)
+{
+  return (first.xbegin < second.xbegin);
+}
+
+bool CgRenderer::compare_xpos(const int first, const int second)
+{
+  return (first < second);
+}
+
+void CgRenderer::count_played_strings(t_string_segment *pstrsiter, int fret)
+{
+  std::list<t_note_segment>::iterator  iter;
+  t_note_segment                      *pit;
+
+  pstrsiter->string_lst.clear();
+  iter = m_segments.begin();
+  while (iter != m_segments.end())
+    {
+      pit = &(*iter);
+      if (pit->xbegin <= pstrsiter->x0 && pit->xend >= (pstrsiter->x0 + pstrsiter->length) && pit->fret == fret)
+	{
+	  pstrsiter->string_lst.push_back(pit->nf);
+	}
+      iter++;
+    }
+}
+
+std::list<t_note_segment>::iterator CgRenderer::get_first_fret(int fret)
+{
+  std::list<t_note_segment>::iterator iter;
+
+  iter = m_segments.begin();
+  while (iter != m_segments.end())
+    {
+      if ((*iter).fret == fret)
+	return iter;
+      iter++;
+    }
+  return iter;
+}
+
+std::list<t_note_segment>::iterator CgRenderer::get_next_on_fret(std::list<t_note_segment>::iterator iter, int fret)
+{
+  iter++;
+  while (iter != m_segments.end())
+    {
+      if ((*iter).fret == fret)
+	return iter;
+      iter++;
+    }
+  return iter;
+}
+
+void CgRenderer::concat_segments()
+{
+  std::list<t_note_segment>::iterator   iter;
+  std::list<t_note_segment>::iterator   next;
+  std::list<t_chord_segment>::iterator  citer;
+  std::list<t_string_segment>::iterator strsiter;
+  std::list<int>                        section_list;
+  std::list<int>::iterator              section_iter;
+  t_note_segment  *pit, *pnext;
+  t_chord_segment  s;
+  t_chord_segment *ps;
+  t_string_segment stringsegment;
+  int              i;
+
+  // Sort the t_note_segment list by x
+  m_segments.sort(CgRenderer::compare_note_segments);
+  // Find intersecting spaces
+  m_chords.clear();
+  for (i = 0; i < GUITAR_NOTES_PER_STRING; i++)
+    {
+      iter = get_first_fret(i);
+      if (iter != m_segments.end())
+	{
+	  pit = &(*iter);
+	  s.string_segment_list.clear();
+	  s.chord_segment.xbegin = pit->xbegin;
+	  s.chord_segment.xend = pit->xend;
+	  s.chord_segment.y = pit->y;
+	  s.chord_segment.height = pit->height;
+	  s.chord_segment.nf.string = 0;
+	  s.chord_segment.fret = i;
+	}
+      while (iter != m_segments.end())
+	{
+	  pit = &(*iter);
+	  next = get_next_on_fret(iter, i);
+	  if (next == m_segments.end())
+	    {
+	      m_chords.push_back(s);
+	    }
+	  else
+	    {
+	      pnext = &(*next);
+	      if (overlaping(&s.chord_segment, pnext))
+		{
+		  s.chord_segment.xend = s.chord_segment.xend > pnext->xend? s.chord_segment.xend : pnext->xend;
+		}
+	      else
+		{
+		  // Push the current chord segment
+		  m_chords.push_back(s);
+		  // Prepare the next chord segment
+		  s.chord_segment.xbegin = pnext->xbegin;
+		  s.chord_segment.xend = pnext->xend;
+		  s.chord_segment.y = pnext->y;
+		  s.chord_segment.fret = i;
+		  s.chord_segment.height = pnext->height;
+		}
+	    }
+	  iter = next;
+	}
+    }
+  // Find the subidvisions of the enclosing segments
+  citer = m_chords.begin();
+  while (citer != m_chords.end())
+    {
+      ps = &(*citer);
+      section_list.clear();
+      iter = m_segments.begin();
+      while (iter != m_segments.end())
+	{
+	  pit = &(*iter);
+	  if (pit->xbegin >= ps->chord_segment.xbegin && pit->xend <= ps->chord_segment.xend && pit->fret == ps->chord_segment.fret)
+	    {
+	      section_list.push_back(pit->xbegin);
+	      section_list.push_back(pit->xend);
+	    }
+	  iter++;
+	}
+      section_list.sort(compare_xpos);
+      section_iter = section_list.begin();
+      if (section_iter != section_list.end())
+	{
+	  stringsegment.x0 = *section_iter;
+	  section_iter++;
+	}
+      while (section_iter != section_list.end())
+	{
+	  if (*section_iter != stringsegment.x0)
+	    {
+	      stringsegment.length = *section_iter - stringsegment.x0;
+	      ps->string_segment_list.push_back(stringsegment);
+	      stringsegment.x0 = *section_iter;
+	    }
+	  section_iter++;
+	}
+      citer++;
+    }
+  // Count the strings per subsegment
+  citer = m_chords.begin();
+  while (citer != m_chords.end())
+    {
+      ps = &(*citer);
+      strsiter = ps->string_segment_list.begin();
+      while (strsiter != ps->string_segment_list.end())
+	{
+	  count_played_strings(&(*strsiter), ps->chord_segment.fret);
+	  strsiter++;
+	}
+      citer++;
+    }
+  // Add the rectagles of the coming notes.
+  add_coming_notes_rectangles();
+}
+
+void CgRenderer::add_coming_notes_rectangles()
+{
+  std::list<t_chord_segment>::iterator  citer;
+  std::list<t_string_segment>::iterator strsiter;
+  std::list<t_notefreq>::iterator       numiter;
+  int               height;
+  t_chord_segment  *ps;
+  t_string_segment *pstrsgmt;
+  t_note_drawing    nd;
+  float             string_number;
+  float             h, offset;
+
+  // Count the strings per subsegment
+  citer = m_chords.begin();
+  while (citer != m_chords.end())
+    {
+      ps = &(*citer);
+      height = ps->chord_segment.height;
+      // Show the chord surounding box
+      nd.lvl = lvl_background;
+      nd.bcircle = false;
+      nd.string = 0;
+      nd.color = NOTE_COLOR;
+      nd.h = ps->chord_segment.height;
+      nd.y = ps->chord_segment.y;
+      nd.w = ps->chord_segment.xend - ps->chord_segment.xbegin;
+      nd.x = ps->chord_segment.xbegin;
+      offset = nd.h / 8;
+      nd.w += 2 * offset;
+      nd.h += 2 * offset;
+      nd.x -= offset;
+      nd.y -= offset;      
+      nd.rad = 0;
+      m_drawlist.push_back(nd);
+      // Draw the notes and chords rectangles
+      strsiter = ps->string_segment_list.begin();
+      while (strsiter != ps->string_segment_list.end())
+	{
+	  pstrsgmt = &(*strsiter);
+	  h = 0;
+	  string_number = pstrsgmt->string_lst.size();
+	  numiter = pstrsgmt->string_lst.begin();
+	  while (numiter != pstrsgmt->string_lst.end())
+	    {
+	      nd.lvl = lvl_background;
+	      nd.bcircle = false;
+	      nd.string = (*numiter).string;
+	      nd.color = string_to_color(&(*numiter));
+	      nd.h = height / string_number;
+	      nd.y = ps->chord_segment.y + h * (height / string_number);
+	      nd.w = pstrsgmt->length;
+	      nd.x = pstrsgmt->x0;
+	      nd.rad = 0;
+	      m_drawlist.push_back(nd);
+	      //printf("pushing x=%f y=%f h=%f\n", nd.x, nd.y, nd.h);
+	      h++;
+	      numiter++;
+	    }
+	  strsiter++;
+	}
+
+      citer++;
+    }
+  m_segments.clear();
+  m_chords.clear();
 }
 
 int CgRenderer::reducecolor(int color)
 {
   int alpha = color & 0xFF000000;
-  
+
   color = (color >> 1) & 0x007F7F7F;
   return color | alpha;
 }
@@ -521,7 +756,7 @@ void CgRenderer::draw_note_drawings(erlvl level)
   t_fcoord                            center;
   t_fcoord                            fpos, fdim;
   bool                                bantialiased;
-  float                               offset;
+  //float                               offset;
 
   bantialiased = true;
   iter = m_drawlist.begin();
@@ -544,8 +779,8 @@ void CgRenderer::draw_note_drawings(erlvl level)
 	    }
 	  center.x = pd->x;
 	  center.y = pd->y;
-	  m_gfxprimitives->disc(center, pd->rad + pd->rad / 4., masked_outline_color, bantialiased);
-	  m_gfxprimitives->disc(center, pd->rad, color, bantialiased);
+	  m_gfxprimitives->disc(center, pd->rad, masked_outline_color, bantialiased);
+	  m_gfxprimitives->disc(center, pd->rad - pd->rad / 4.5, color, bantialiased);
 	}
       else
 	{
@@ -554,6 +789,7 @@ void CgRenderer::draw_note_drawings(erlvl level)
 	    {
 	      // Outline
 	      color = pd->color;
+/*
 	      offset = pd->h / 8;
 	      fpos.x = pd->x;
 	      fpos.y = pd->y;
@@ -563,18 +799,19 @@ void CgRenderer::draw_note_drawings(erlvl level)
 	      fdim.y += 2 * offset;
 	      fpos.x -= offset;
 	      fpos.y -= offset;
-	      if (pd->rad > 4)
-		m_gfxprimitives->rounded_box(fpos, fdim, NOTE_COLOR, bantialiased, pd->rad);
-	      else
-		m_gfxprimitives->box(fpos, fdim, NOTE_COLOR, bantialiased);
+	      //if (pd->rad > 4)
+	      //m_gfxprimitives->rounded_box(fpos, fdim, NOTE_COLOR, bantialiased, pd->rad);
+	      //else
+	      m_gfxprimitives->box(fpos, fdim, NOTE_COLOR, bantialiased);
+*/
 	      fpos.x = pd->x;
 	      fpos.y = pd->y;
 	      fdim.x = pd->w;
 	      fdim.y = pd->h;
-	      if (pd->rad > 4)
-		m_gfxprimitives->rounded_box(fpos, fdim, color, bantialiased, pd->rad);
-	      else
-		m_gfxprimitives->box(fpos, fdim, color, bantialiased);
+	      // if (pd->rad > 4)
+	      //m_gfxprimitives->rounded_box(fpos, fdim, color, bantialiased, pd->rad);
+	      //else
+	      m_gfxprimitives->box(fpos, fdim, color, bantialiased);
 	    }
 	}
       iter++;
@@ -673,9 +910,9 @@ void CgRenderer::print_current_timecodes(Cgfxarea *pw, int color, double timecod
   mseconds -= seconds;
   mseconds *= 100;
   if (minutes == 0)
-    sprintf(text, "     %- 2.1fs", seconds);
+    snprintf(text, TIMETXTSZ, "     %- 2.1fs", seconds);
   else
-    sprintf(text, "%- 3.0f:%- 2.1fs", minutes, seconds);
+    snprintf(text, TIMETXTSZ, "%- 3.0f:%- 2.1fs", minutes, seconds);
   if (TTF_SizeText(m_font, text, &w, &h) == 0)
     {
       texth = h;
@@ -705,9 +942,9 @@ void CgRenderer::print_current_timecodes(Cgfxarea *pw, int color, double timecod
   mseconds -= seconds;
   mseconds *= 100;
   if (minutes == 0)
-    sprintf(text, "     %- 2.1fs", seconds);
+    snprintf(text, TIMETXTSZ, "     %- 2.1fs", seconds);
   else
-    sprintf(text, "%- 3.0f:%- 2.1fs", minutes, seconds);
+    snprintf(text, TIMETXTSZ, "%- 3.0f:%- 2.1fs", minutes, seconds);
   if (TTF_SizeText(m_font, text, &w, &h) == 0)
     {
       texth = h;

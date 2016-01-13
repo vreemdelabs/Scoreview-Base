@@ -17,10 +17,35 @@
  along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#define GBACKGROUND         0xFF404040
-#define GUITAR_STRINGS      6
+#define GBACKGROUND             0xFF404040
+#define GUITAR_STRINGS          6
+#define GUITAR_NOTES_PER_STRING 24
 
-#define FRET_COLOR          0xFFDFDFBF
+#define FRET_COLOR              0xFFDFDFBF
+
+typedef struct s_note_segment
+{
+  int          xbegin;
+  int          xend;
+  int          y;
+  int          height;
+  int          fret;
+  t_notefreq   nf;
+}              t_note_segment;
+
+// Overlaping notes
+typedef struct          s_string_segment
+{
+  int                   x0;
+  int                   length;
+  std::list<t_notefreq> string_lst;
+}                       t_string_segment;
+
+typedef struct                s_chord_segment
+{
+  t_note_segment              chord_segment;
+  std::list<t_string_segment> string_segment_list;
+}                             t_chord_segment;
 
 class CgRenderer : public CFingerRenderer
 {
@@ -54,6 +79,16 @@ class CgRenderer : public CFingerRenderer
   void draw_note_drawings(erlvl level);
   int  string_width(int string_number);
   int  reducecolor(int color);
+  //
+  bool overlaping(t_note_segment *p1, t_note_segment *p2);
+  static bool compare_note_segments(const t_note_segment first, const t_note_segment second);
+  static bool compare_xpos(const int first, const int second);
+  void count_played_strings(t_string_segment *pstrsiter, int frety);
+  void concat_segments();
+  void add_coming_notes_rectangles();
+  std::list<t_note_segment>::iterator get_first_fret(int fret);
+  std::list<t_note_segment>::iterator get_next_on_fret(std::list<t_note_segment>::iterator iter, int frety);
+  //
   void Draw_the_measure_bars(CScore *pscore, t_coord pos, t_coord dim, double timecode);
   void print_current_timecodes(Cgfxarea *pw, int color, double timecode, double viewtime);
   void Draw_the_practice_end(t_coord pos, t_coord dim, t_limits *pl);
@@ -79,7 +114,10 @@ class CgRenderer : public CFingerRenderer
     float rad;
   }              t_note_drawing;
 
-  std::list<t_note_drawing> m_drawlist;
+  std::list<t_note_drawing>  m_drawlist;
+
+  std::list<t_note_segment>  m_segments;
+  std::list<t_chord_segment> m_chords;
 
   CMeshList *m_mesh_list;
 };

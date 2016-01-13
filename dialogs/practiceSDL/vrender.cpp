@@ -328,7 +328,7 @@ void CvRenderer::add_drawings(t_coord dim, int y, CNote *pn, t_notefreq *pnf, t_
   noteheigth = (dim.y * 88. / 100) / 30.; // average of 30 notes on the fingerboard
   xt0r = get_time0_x_limit_from_y(dim, y, false);
   xt0l = get_time0_x_limit_from_y(dim, y, true);
-  pix_s = xt0l / m_viewtime;
+  pix_s = (dim.x - xt0r) / m_viewtime;
   passed_viewtime = xt0l * pix_s;
   if (pn->m_time + pn->m_duration >= timecode && pn->m_time < timecode + m_viewtime)
     {
