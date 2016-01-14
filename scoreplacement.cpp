@@ -336,58 +336,66 @@ enoteitempos CScorePlacement::is_on_note_element(t_coord mouse_pos, int *pfreq_n
   t_fcoord                              fmouse_pos;
   t_fcoord                              circledim;
   t_fcoord                              topleft;
+  int                                   freqnumcnt;
+  enoteitempos                          ret;
+  t_note_sketch                        *last_pns_out;
 
   fmouse_pos.x = appx_2_placementx(mouse_pos.x);
   fmouse_pos.y = appy_2_placementy(mouse_pos.y);
   circledim.y = 2. * m_zradius;
   circledim.x = 2. * m_zradius;
-  *pns_out = NULL;
-  *pfreq_number = 0;
+  last_pns_out = NULL;
+  *pfreq_number = -1;
+  ret = error_no_element;
+  freqnumcnt = 0;
   iter = m_rendered_notes_list.begin();
   while (iter != m_rendered_notes_list.end())
     {
       pns = &(*iter);
+      // First check if it is in a note circle
+      {
+	freqnumcnt = 0;
+	note_info_iter = pns->noteinfolist.begin();
+	//printf("noteinfo list size = %d\n", (int)pns->noteinfolist.size());
+	while (note_info_iter != pns->noteinfolist.end())
+	  {
+	    topleft.x = (*note_info_iter).circle.center.x - circledim.x / 2.;
+	    topleft.y = (*note_info_iter).circle.center.y - circledim.y / 2.;
+	    //printf("checking %f, %f in %f, %f sx=%f, sy=%f\n", fmouse_pos.x, fmouse_pos.y, topleft.x, topleft.y, circledim.x, circledim.y);
+	    if (is_in_area(fmouse_pos, topleft, circledim))
+	      {
+		ret = (pns->noteinfolist.size() > 1? chord : note);
+		*pns_out = pns;
+		*pfreq_number = freqnumcnt;
+		return ret; // Return directly the chord or note
+	      }
+	    freqnumcnt += 1;
+	    note_info_iter++;
+	  }
+      }
       // Top tail or beam zone
       if (is_in_area(fmouse_pos, pns->pos, pns->dim))
 	{
 	  if (is_in_area(fmouse_pos, pns->pos, pns->beamboxdim))
 	    {
 	      //printf("beam\n");
-	      *pns_out = pns;
-	      return beam;
+	      last_pns_out = pns;
+	      ret = beam;
 	    }
 	  topleft = pns->pos;
 	  topleft.y += pns->beamboxdim.y;
 	  if (is_in_area(fmouse_pos, topleft, pns->tailboxdim))
 	    {
 	      //printf("tail\n");
-	      *pns_out = pns;
-	      return tail;
-	    }
-	}
-      else
-	{
-	  *pfreq_number = 0;
-	  note_info_iter = pns->noteinfolist.begin();
-	  //printf("noteinfo list size = %d\n", (int)pns->noteinfolist.size());
-	  while (note_info_iter != pns->noteinfolist.end())
-	    {
-	      topleft.x = (*note_info_iter).circle.center.x - circledim.x / 2.;
-	      topleft.y = (*note_info_iter).circle.center.y - circledim.y / 2.;
-	      //printf("checking %f, %f in %f, %f sx=%f, sy=%f\n", fmouse_pos.x, fmouse_pos.y, topleft.x, topleft.y, circledim.x, circledim.y);
-	      if (is_in_area(fmouse_pos, topleft, circledim))
-		{
-		  *pns_out = pns;
-		  return (pns->noteinfolist.size() > 1? chord : note);
-		}
-	      *pfreq_number += 1;
-	      note_info_iter++;
+	      last_pns_out = pns;
+	      ret = tail;
 	    }
 	}
       iter++;
     }
-  *pfreq_number = -1;
-  return error_no_element;
+  // The return value is nothing or a note tailbox area
+  *pns_out = last_pns_out;
+  return ret;
 }
 
 t_measure_number* CScorePlacement::is_on_bar_number(t_coord mouse_pos)

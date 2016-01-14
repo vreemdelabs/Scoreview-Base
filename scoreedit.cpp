@@ -586,13 +586,14 @@ bool CscoreEdit::mouse_move(CScore *pscore, CScorePlacement *pplacement, t_coord
 
 bool CscoreEdit::mouse_wheel(CScorePlacement *pplacement, t_coord mouse_coordinates, int inc)
 {
-  CMesure *pm;
-  t_measure_number *pmeasurenumber;
-  int           i, string_num, prevstring;
-  int           freq_number;
-  t_note_sketch *pns;
-  CNote         *pnote;
+  CMesure                        *pm;
+  t_measure_number               *pmeasurenumber;
+  int                             i, string_num, prevstring;
+  int                             freq_number;
+  t_note_sketch                  *pns;
+  CNote                          *pnote;
   std::list<t_notefreq>::iterator iter;
+  enoteitempos                    element;
 
   pmeasurenumber = pplacement->is_on_bar_number(mouse_coordinates);
   if (pmeasurenumber != NULL &&
@@ -608,7 +609,8 @@ bool CscoreEdit::mouse_wheel(CScorePlacement *pplacement, t_coord mouse_coordina
     }
   if (m_pks->is_pressed('s'))
     {
-      if (pplacement->is_on_note_element(mouse_coordinates, &freq_number, &pns))
+      element = pplacement->is_on_note_element(mouse_coordinates, &freq_number, &pns);
+      if (element == chord || element == note)
 	{
 	  pnote = pns->pnote;
 	  i = 0;
@@ -636,6 +638,7 @@ bool CscoreEdit::mouse_wheel(CScorePlacement *pplacement, t_coord mouse_coordina
 		    }
 		  return true;
 		}
+	      i++;
 	      iter++;
 	    }
 	}
