@@ -49,7 +49,7 @@ class CvRenderer : public CFingerRenderer
   ~CvRenderer();
 
  public:
-  void render(Cgfxarea *pw, CScore *pscore, std::string instrument_name, int instru_identifier, t_limits *pl);
+  void render(Cgfxarea *pw, CScore *pscore, std::string instrument_name, int instru_identifier, t_limits *pl, int hnote_id);
 
  private:
 
@@ -72,7 +72,7 @@ class CvRenderer : public CFingerRenderer
   int  string_x(t_coord dim, int string_number, int y);
   int  get_time0_x_limit_from_y(t_coord dim, int y, bool left);
   void check_visible_notes(Cgfxarea *pw, CScore *pscore, t_limits *pl);
-  void draw_note_drawings(erlvl level);
+  void draw_note_drawings(erlvl level, int hnote_id);
   int  string_width(int string_number);
   int  reducecolor(int color);
   void Draw_the_measure_bars(CScore *pscore, t_coord pos, t_coord dim, double timecode);
@@ -94,6 +94,7 @@ class CvRenderer : public CFingerRenderer
     float w;
     float h;
     float rad;
+    int   note_id;
   }              t_note_drawing;
 
   std::list<t_note_drawing> m_drawlist;

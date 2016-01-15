@@ -109,6 +109,7 @@ class CscoreEdit
   bool   mouse_move(CScore *pscore, CScorePlacement *pplacement, t_coord mouse_coordinates);
   bool   mouse_wheel(CScorePlacement *pplacement, t_coord mouse_coordinates, int inc);
   void   set_chord_fuse(bool bactive);
+  bool   on_note_change(int *pnote_id);
 
  protected:
   virtual void fuse_chords(CScorePlacement *pplacement, CInstrument *pinst);
@@ -131,6 +132,7 @@ class CscoreEdit
  private:
   Ckeypress   *m_pks;
   int          m_state;
+  bool         m_bonnote_chg;
   // reverse action
   //CNote        *m_pmodified_note;
   //CMesure      *m_pmodified_bar;

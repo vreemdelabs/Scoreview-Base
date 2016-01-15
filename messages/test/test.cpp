@@ -565,5 +565,32 @@ int main(void)
     else
       printf(" passed\n");
   }
+  // Note highlight
+  {
+    int identifier = 654684;
+    int identifier_out;
+
+    printf("Note highlight message: ");
+    str = coder.create_note_highlight_message(identifier);
+    res = false;
+    if (coder.build_wire_message(msg, cmsgsize, &size, str))
+      {
+	//printf("note message size=%d.\n", size);
+	assert(size < 2048);
+	decoder.get_next_wire_message(msg, size);
+	if (decoder.message_type() == network_message_note_highlight)
+	  {
+	    res = decoder.get_note_highlight_message(&identifier_out);
+	    res = res && (identifier_out == identifier);
+	  }
+      }
+    if (!res)
+      {
+	printf(" failed\n");
+	exit(1);
+      }
+    else
+      printf(" passed\n");
+  }
 }
 

@@ -728,6 +728,7 @@ void CnetworkMessaging::process_main_app_messages()
 	    Send_to_network_client(practice_dialog, pmsg->data, pmsg->size);
 	  }
 	  break;
+	case message_note_highlight:
 	case message_send_remadd_note:
 	case message_send_remadd_measure:
 	case message_note_transfer:

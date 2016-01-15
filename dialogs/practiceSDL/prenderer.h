@@ -39,7 +39,7 @@ class CpRenderer : public CFingerRenderer
   ~CpRenderer();
 
  public:
-  void render(Cgfxarea *pw, CScore *pscore, std::string instrument_name, int instru_identifier, t_limits *pl);
+  void render(Cgfxarea *pw, CScore *pscore, std::string instrument_name, int instru_identifier, t_limits *pl, int hnote_id);
 
  private:
   //void render_texture(int color, t_coord pos, float width, float height, SDL_Texture *ptexture);
@@ -54,12 +54,13 @@ class CpRenderer : public CFingerRenderer
   void Draw_the_keys_notes_limit(t_coord pos, t_coord dim);
   void Draw_the_measure_bars(CScore *pscore, t_coord pos, t_coord dim, double timecode);
   void Draw_the_octave_limits(t_coord pos, t_coord dim);
-  void fill_note_segments_list(CScore *pscore, t_coord pos, t_coord dim, t_limits *pl);
+  void fill_note_segments_list(CScore *pscore, t_coord pos, t_coord dim, t_limits *pl, int hnote_id);
   void Draw_the_notes(t_coord pos, t_coord dim, bool bblack);
   void check_played(CScore *pscore, t_limits *pl);
   void Draw_the_keys_being_played(t_coord dim, bool bblack);
   int  time_to_y(double note_time, double timecode);
   int  reduce_color(int color, float coef);
+  int  brighten(int color);
   void print_current_timecodes(Cgfxarea *pw, int color, double timecode, double viewtime);
   void Draw_the_practice_end(t_coord pos, t_coord dim, t_limits *pl);
 
@@ -85,6 +86,7 @@ class CpRenderer : public CFingerRenderer
   typedef struct s_tobeplayed
   {
     int  abs_note;
+    bool bhighlighted;
     int  brighthand;
     int  ystart;
     int  ystop;

@@ -110,5 +110,6 @@ class Cappdata
   double           m_practicespeed;
   float            m_lof;
   float            m_hif;
+  int              m_note_higlight_identifier;
 };
 

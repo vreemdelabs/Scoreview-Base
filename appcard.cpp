@@ -177,7 +177,7 @@ void Cappdata::create_cards_layout()
   pc = new Ccard(area, title, cardimg, m_gfxprimitives);
   pc->add_info_line(string("Action"));
   pc->add_info_line(string(" "));
-  pc->add_info_line(string("Adds an instrument to"));
+  pc->add_info_line(string("Add an instrument to"));
   pc->add_info_line(string("the composition.")); 
   m_cardlayout->add(pc);
   xpos += xposoffset;

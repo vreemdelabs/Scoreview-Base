@@ -243,6 +243,11 @@ void Cappdata::decode_message_data(t_internal_message *pmsg)
 	      }
 	  }
 	  break;
+	case network_message_note_highlight:
+	  {
+	    coder.get_note_highlight_message(&m_note_higlight_identifier);
+	  }
+	  break;
 	case network_message_remadd_measure:
 	  {
 	    

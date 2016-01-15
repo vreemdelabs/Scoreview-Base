@@ -124,6 +124,11 @@ message scoreNotes
 	repeated note       noteList = 2;
 }
 
+message noteHighlight
+{
+	optional int64 uniqueid = 1;
+}
+
 message wireMessage
 {
 	required int32 type = 1;

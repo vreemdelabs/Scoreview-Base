@@ -336,7 +336,7 @@ float CgRenderer::string_x(t_coord dim, int string_number, int y)
   return x;
 }
 
-void CgRenderer::add_drawings(t_coord dim, int y, CNote *pn, t_notefreq *pnf, t_limits *pl)
+void CgRenderer::add_drawings(t_coord dim, int y, CNote *pn, t_notefreq *pnf, t_limits *pl, int hnote_id)
 {
   int            noteheigth;
   int            xt0l, xt0r;
@@ -379,6 +379,7 @@ void CgRenderer::add_drawings(t_coord dim, int y, CNote *pn, t_notefreq *pnf, t_
 	  nd.w = nd.w - abs(nd.x - newx);
 	  nd.x = newx;
 	}
+      segment.bselected_highlight = (hnote_id == pn->identifier());
       segment.xbegin = nd.x;
       segment.xend   = nd.x + nd.w;
       segment.y = y - noteheigth;
@@ -457,7 +458,7 @@ void CgRenderer::add_drawings(t_coord dim, int y, CNote *pn, t_notefreq *pnf, t_
     }
 }
 
-void CgRenderer::check_visible_notes(Cgfxarea *pw, CScore *pscore, t_limits *pl)
+void CgRenderer::check_visible_notes(Cgfxarea *pw, CScore *pscore, t_limits *pl, int hnote_id)
 {
   std::list<t_notefreq>::iterator     notefreq_iter;
   CInstrument                        *pi;
@@ -482,7 +483,7 @@ void CgRenderer::check_visible_notes(Cgfxarea *pw, CScore *pscore, t_limits *pl)
       while (notefreq_iter != pn->m_freq_list.end())
 	{
 	  y = note_2_y(dim, &(*notefreq_iter));
-	  add_drawings(dim, y, pn, &(*notefreq_iter), pl);
+	  add_drawings(dim, y, pn, &(*notefreq_iter), pl, hnote_id);
 	  notefreq_iter++;
 	}
       if (pn->m_time >= timecode + m_viewtime)
@@ -582,6 +583,7 @@ void CgRenderer::concat_segments()
 	{
 	  pit = &(*iter);
 	  s.string_segment_list.clear();
+	  s.bselected_highlight = pit->bselected_highlight;
 	  s.chord_segment.xbegin = pit->xbegin;
 	  s.chord_segment.xend = pit->xend;
 	  s.chord_segment.y = pit->y;
@@ -603,12 +605,14 @@ void CgRenderer::concat_segments()
 	      if (overlaping(&s.chord_segment, pnext))
 		{
 		  s.chord_segment.xend = s.chord_segment.xend > pnext->xend? s.chord_segment.xend : pnext->xend;
+		  s.bselected_highlight = s.bselected_highlight || pnext->bselected_highlight;
 		}
 	      else
 		{
 		  // Push the current chord segment
 		  m_chords.push_back(s);
 		  // Prepare the next chord segment
+		  s.bselected_highlight = pnext->bselected_highlight;
 		  s.chord_segment.xbegin = pnext->xbegin;
 		  s.chord_segment.xend = pnext->xend;
 		  s.chord_segment.y = pnext->y;
@@ -694,12 +698,12 @@ void CgRenderer::add_coming_notes_rectangles()
       nd.lvl = lvl_background;
       nd.bcircle = false;
       nd.string = 0;
-      nd.color = NOTE_COLOR;
+      nd.color = ps->bselected_highlight? WHITE : NOTE_COLOR;
       nd.h = ps->chord_segment.height;
       nd.y = ps->chord_segment.y;
       nd.w = ps->chord_segment.xend - ps->chord_segment.xbegin;
       nd.x = ps->chord_segment.xbegin;
-      offset = nd.h / 8;
+      offset = nd.h / 16;
       nd.w += 2 * offset;
       nd.h += 2 * offset;
       nd.x -= offset;
@@ -746,7 +750,7 @@ int CgRenderer::reducecolor(int color)
   return color | alpha;
 }
 
-void CgRenderer::draw_note_drawings(erlvl level)
+void CgRenderer::draw_note_drawings(erlvl level, int hnote_id)
 {
   std::list<t_note_drawing>::iterator iter;
   t_note_drawing                     *pd;
@@ -754,7 +758,6 @@ void CgRenderer::draw_note_drawings(erlvl level)
   t_fcoord                            center;
   t_fcoord                            fpos, fdim;
   bool                                bantialiased;
-  //float                               offset;
 
   bantialiased = true;
   iter = m_drawlist.begin();
@@ -769,11 +772,11 @@ void CgRenderer::draw_note_drawings(erlvl level)
 	    {
 	      color = STRING_GRAY; 
 	      //color = reducecolor(color);
-	      masked_outline_color = NOTE_COLOR; //BORDEAUX;
+	      masked_outline_color = (hnote_id == pd->note_id)? WHITE : NOTE_COLOR; //BORDEAUX;
 	    }
 	  else
 	    {
-	      masked_outline_color = NOTE_COLOR;
+	      masked_outline_color = (hnote_id == pd->note_id)? WHITE : NOTE_COLOR;
 	    }
 	  center.x = pd->x;
 	  center.y = pd->y;
@@ -787,28 +790,10 @@ void CgRenderer::draw_note_drawings(erlvl level)
 	    {
 	      // Outline
 	      color = pd->color;
-/*
-	      offset = pd->h / 8;
 	      fpos.x = pd->x;
 	      fpos.y = pd->y;
 	      fdim.x = pd->w;
 	      fdim.y = pd->h;
-	      fdim.x += 2 * offset;
-	      fdim.y += 2 * offset;
-	      fpos.x -= offset;
-	      fpos.y -= offset;
-	      //if (pd->rad > 4)
-	      //m_gfxprimitives->rounded_box(fpos, fdim, NOTE_COLOR, bantialiased, pd->rad);
-	      //else
-	      m_gfxprimitives->box(fpos, fdim, NOTE_COLOR, bantialiased);
-*/
-	      fpos.x = pd->x;
-	      fpos.y = pd->y;
-	      fdim.x = pd->w;
-	      fdim.y = pd->h;
-	      // if (pd->rad > 4)
-	      //m_gfxprimitives->rounded_box(fpos, fdim, color, bantialiased, pd->rad);
-	      //else
 	      m_gfxprimitives->box(fpos, fdim, color, bantialiased);
 	    }
 	}
@@ -966,7 +951,7 @@ void CgRenderer::print_current_timecodes(Cgfxarea *pw, int color, double timecod
   m_gfxprimitives->print(text, m_font, fpos, fdim, color, blended, outline, outlinecolor);
 }
 
-void CgRenderer::render(Cgfxarea *pw, CScore *pscore, std::string instrument_name, int instru_identifier, t_limits *pl)
+void CgRenderer::render(Cgfxarea *pw, CScore *pscore, std::string instrument_name, int instru_identifier, t_limits *pl, int hnote_id)
 {
   t_coord pos;
   t_coord dim;
@@ -996,12 +981,12 @@ void CgRenderer::render(Cgfxarea *pw, CScore *pscore, std::string instrument_nam
   Draw_the_measure_bars(pscore, pos, dim, pl->current);
   Draw_the_practice_end(pos, dim, pl);
   draw_finger_board(pw, lvl_background);
-  check_visible_notes(pw, pscore, pl);
-  draw_note_drawings(lvl_background);
+  check_visible_notes(pw, pscore, pl, hnote_id);
+  draw_note_drawings(lvl_background, hnote_id);
   draw_finger_board(pw, lvl_fingerboard);
   draw_strings(pw);
-  draw_note_drawings(lvl_fingerboard);
-  draw_note_drawings(lvl_top);
+  draw_note_drawings(lvl_fingerboard, hnote_id);
+  draw_note_drawings(lvl_top, hnote_id);
   print_current_timecodes(pw, WHITE, pl->current, m_viewtime);
 }
 

@@ -35,7 +35,8 @@
 
 CscoreEdit::CscoreEdit(Ckeypress *pkstates):
   m_pks(pkstates),
-  m_state(waiting)
+  m_state(waiting),
+  m_bonnote_chg(false)
 {
   reset_edit_state();
 }
@@ -384,6 +385,20 @@ bool CscoreEdit::mouse_right_up(t_coord mouse_coordinates)
   return ret;
 }
 
+bool CscoreEdit::on_note_change(int *pnote_id)
+{
+  if (m_bonnote_chg)
+    {
+      if (m_editstate.pmodified_note == NULL)
+	*pnote_id = -1;
+      else
+	*pnote_id = m_editstate.pmodified_note->identifier();
+      m_bonnote_chg = false;
+      return true;
+    }
+  return false;
+}
+
 bool CscoreEdit::mouse_move(CScore *pscore, CScorePlacement *pplacement, t_coord mouse_coordinates)
 {
   std::list<float>::iterator iter;
@@ -408,6 +423,7 @@ bool CscoreEdit::mouse_move(CScore *pscore, CScorePlacement *pplacement, t_coord
 	{
 	  m_state = onnote;
 	  printf("set modified note wait\n");
+	  m_bonnote_chg = (m_editstate.pmodified_note == NULL);
 	  m_editstate.pmodified_note = pnotesk->pnote;
 	  if (!m_pks->is_pressed('d'))
 	    {
@@ -458,6 +474,7 @@ bool CscoreEdit::mouse_move(CScore *pscore, CScorePlacement *pplacement, t_coord
       note_element = pplacement->is_on_note_element(mouse_coordinates, &freqnum, &pnotesk);
       if (pnotesk == NULL)
 	{
+	  m_bonnote_chg = (m_editstate.pmodified_note != NULL);
 	  m_state = waiting;
 	  m_editstate.pmodified_note = NULL;
 	  m_editstate.blrcursor = false;
@@ -467,6 +484,7 @@ bool CscoreEdit::mouse_move(CScore *pscore, CScorePlacement *pplacement, t_coord
       else
 	{
 	  printf("set modified note\n");
+	  m_bonnote_chg = (m_editstate.pmodified_note == NULL);
 	  m_editstate.pmodified_note = pnotesk->pnote;
 	  if (!m_pks->is_pressed('d'))
 	    {

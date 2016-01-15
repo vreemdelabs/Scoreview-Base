@@ -63,7 +63,7 @@ int CpRenderer::reduce_color(int color, float coef)
   const float Pb = 0.114;
 #endif
   
-  a = ((color >> 24) & 0xFF) - 70;
+  a = ((color >> 24) & 0xFF);
   b = (color >> 16) & 0xFF;
   g = (color >>  8) & 0xFF;
   r = color & 0xFF;
@@ -80,6 +80,26 @@ int CpRenderer::reduce_color(int color, float coef)
   b = b * coef;
   r = r * coef;
 #endif
+  return ((((int)a & 0xFF) << 24) | (((int)b & 0xFF) << 16) | (((int)g & 0xFF) << 8) | ((int)r & 0xFF));
+}
+
+int CpRenderer::brighten(int color)
+{
+  float r, g, b, a;
+  float coef = 0.75;
+  
+  a = ((color >> 24) & 0xFF);
+  b = (color >> 16) & 0xFF;
+  g = (color >>  8) & 0xFF;
+  r = color & 0xFF;
+  //
+  //a = a + (256 - a) * coef;
+  g += (g) * coef;
+  g = g > 255? 255 : g;
+  b += (b) * coef;
+  b = b > 255? 255 : b;
+  r += (r) * coef;
+  r = r > 255? 255 : r;
   return ((((int)a & 0xFF) << 24) | (((int)b & 0xFF) << 16) | (((int)g & 0xFF) << 8) | ((int)r & 0xFF));
 }
 
@@ -224,7 +244,7 @@ int CpRenderer::time_to_y(double note_time, double timecode)
   return (m_keylimity * ((timecode + m_viewtime) - note_time) / m_viewtime);
 }
 
-void CpRenderer::fill_note_segments_list(CScore *pscore, t_coord pos, t_coord dim, t_limits *pl)
+void CpRenderer::fill_note_segments_list(CScore *pscore, t_coord pos, t_coord dim, t_limits *pl, int hnote_id)
 {
   std::list<t_notefreq>::iterator iter;
   CInstrument                    *pi;
@@ -240,6 +260,7 @@ void CpRenderer::fill_note_segments_list(CScore *pscore, t_coord pos, t_coord di
   for (i = 0; i < PIANO_NOTE_NUMBER; i++)
     {
       m_keyboard[i].btobeplayed = false;
+      m_keyboard[i].brighthand = false;
     }
   m_playlist.clear();
   timecode = pl->current;
@@ -265,7 +286,8 @@ void CpRenderer::fill_note_segments_list(CScore *pscore, t_coord pos, t_coord di
 		      exit(1);
 		    }
 		  tp.abs_note = piano_note;
-		  tp.brighthand = ((*iter).string == 1);
+		  tp.bhighlighted = (hnote_id == pn->identifier());
+		  tp.brighthand = (((*iter).string & 1) == 1);
 		  tp.ystart = time_to_y(pn->m_time + pn->m_duration, timecode);
 		  tp.ystop =  time_to_y(pn->m_time, timecode);
 		  //
@@ -287,6 +309,7 @@ void CpRenderer::fill_note_segments_list(CScore *pscore, t_coord pos, t_coord di
 		    }
 		  m_playlist.push_front(tp);
 		  m_keyboard[piano_note].btobeplayed = true;
+		  m_keyboard[piano_note].brighthand = tp.brighthand;
 		}
 	      iter++;
 	    }
@@ -321,6 +344,10 @@ void CpRenderer::Draw_the_notes(t_coord pos, t_coord dim, bool bblack)
 	  if (!bblack)
 	    {
 	      color = tbp->brighthand? RIGHT_HAND_COLOR_W : LEFT_HAND_COLOR_W;
+	      if (tbp->bhighlighted)
+		{
+		  color = brighten(color);
+		}
 #ifdef USEROUNDEDBOXES
 	      fpos.x = tbp->x;
 	      fpos.y = tbp->ystart;
@@ -338,6 +365,10 @@ void CpRenderer::Draw_the_notes(t_coord pos, t_coord dim, bool bblack)
 	  if (bblack)
 	    {
 	      color = tbp->brighthand? RIGHT_HAND_COLOR_B : LEFT_HAND_COLOR_B;
+	      if (tbp->bhighlighted)
+		{
+		  color = brighten(color);
+		}
 #ifdef USEROUNDEDBOXES
 	      fpos.x = tbp->x;
 	      fpos.y = tbp->ystart;
@@ -369,8 +400,6 @@ void CpRenderer::check_played(CScore *pscore, t_limits *pl)
   for (i = 0; i < PIANO_NOTE_NUMBER; i++)
     {
       m_keyboard[i].bplayed = false;
-      //m_keyboard.btobeplayed[i] = false;
-      m_keyboard[i].brighthand = false;
     }
   timecode = pl->current;
   pi = m_instrument;
@@ -553,7 +582,7 @@ void CpRenderer::print_current_timecodes(Cgfxarea *pw, int color, double timecod
   m_gfxprimitives->print(text, m_font, fpos, fdim, color, blended, outline, outlinecolor);
 }
 
-void CpRenderer::render(Cgfxarea *pw, CScore *pscore, std::string instrument_name, int instru_identifier, t_limits *pl)
+void CpRenderer::render(Cgfxarea *pw, CScore *pscore, std::string instrument_name, int instru_identifier, t_limits *pl, int hnote_id)
 {
   t_coord pos;
   t_coord dim;
@@ -574,7 +603,7 @@ void CpRenderer::render(Cgfxarea *pw, CScore *pscore, std::string instrument_nam
   m_bkey_sizey = m_key_sizey * ratio * 0.85;
   Draw_the_measure_bars(pscore, pos, dim, pl->current);
   Draw_the_practice_end(pos, dim, pl);
-  fill_note_segments_list(pscore, pos, dim, pl);
+  fill_note_segments_list(pscore, pos, dim, pl, hnote_id);
   Draw_the_notes(pos, dim, false);
   Draw_the_notes(pos, dim, true);
   Draw_the_octave_limits(pos, dim);

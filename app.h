@@ -184,7 +184,8 @@ class Cappdata
   bool queued_filtered_band();
   void send_start_stop(audio_track_command cmd);
   void draw_fps(double last_time);
-  
+  void send_note_highlight(int note_id);
+
  public:
   int               m_width;
   int               m_height;

@@ -31,6 +31,7 @@ typedef struct s_note_segment
   int          height;
   int          fret;
   t_notefreq   nf;
+  bool         bselected_highlight;
 }              t_note_segment;
 
 // Overlaping notes
@@ -44,6 +45,7 @@ typedef struct          s_string_segment
 typedef struct                s_chord_segment
 {
   t_note_segment              chord_segment;
+  bool                        bselected_highlight;
   std::list<t_string_segment> string_segment_list;
 }                             t_chord_segment;
 
@@ -54,7 +56,7 @@ class CgRenderer : public CFingerRenderer
   ~CgRenderer();
 
  public:
-  void render(Cgfxarea *pw, CScore *pscore, std::string instrument_name, int instru_identifier, t_limits *pl);
+  void render(Cgfxarea *pw, CScore *pscore, std::string instrument_name, int instru_identifier, t_limits *pl, int hnote_id);
 
  private:
   enum erlvl
@@ -70,13 +72,13 @@ class CgRenderer : public CFingerRenderer
   void render_string(Cgfxarea *pw, int string_number, int played_note);
   int  blend(float xpos, int color, bool left);
   int  string_to_color(t_notefreq *pnf);
-  void add_drawings(t_coord dim, int y, CNote *pn, t_notefreq *pnf, t_limits *pl);
+  void add_drawings(t_coord dim, int y, CNote *pn, t_notefreq *pnf, t_limits *pl, int hnote_id);
   int  note_2_y(t_coord dim, t_notefreq *pnotef);
   t_string_equation get_string(t_coord dim, int string_number);
   float string_x(t_coord dim, int string_number, int y);
   int  get_time0_x_limit_from_y(t_coord dim, int y, bool left);
-  void check_visible_notes(Cgfxarea *pw, CScore *pscore, t_limits *pl);
-  void draw_note_drawings(erlvl level);
+  void check_visible_notes(Cgfxarea *pw, CScore *pscore, t_limits *pl, int hnote_id);
+  void draw_note_drawings(erlvl level, int hnote_id);
   int  string_width(int string_number);
   int  reducecolor(int color);
   //
@@ -112,6 +114,7 @@ class CgRenderer : public CFingerRenderer
     float w;
     float h;
     float rad;
+    int   note_id;
   }              t_note_drawing;
 
   std::list<t_note_drawing>  m_drawlist;

@@ -159,6 +159,19 @@ std::string Cmessage_coding::create_remadd_note_message(CNote *pn, bool bdelete)
   return pack_message(&output, network_message_remadd_note);
 }
 
+std::string Cmessage_coding::create_note_highlight_message(int identifier)
+{
+  string output;
+  bool   res;
+  scoreview::noteHighlight nh;
+
+  nh.set_uniqueid(identifier);
+  res = nh.SerializeToString(&output);
+  if (!res)
+    return NULL;
+  return pack_message(&output, network_message_note_highlight);
+}
+
 void set_measure(scoreview::measure *pme, CMesure *pm)
 {
   pme->set_times(pm->m_times);

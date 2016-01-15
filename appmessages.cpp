@@ -334,6 +334,26 @@ void Cappdata::send_note_to_practice_view(CNote *pn, bool deletenote)
     }
 }
 
+void Cappdata::send_note_highlight(int note_id)
+{
+  scmsg::Cmessage_coding coder;
+  string                 command;
+  const int              cmsgsize = 4096;
+  char                   msg[cmsgsize];
+  int                    size;
+
+  if (!m_pserver->is_practice_dialog_enable())
+    return;
+  command = coder.create_note_highlight_message(note_id);
+  if (coder.build_wire_message(msg, cmsgsize, &size, command))
+    {
+#ifdef _DEBUG
+      printf("sending note highlight command to practice:%s", command.c_str());
+#endif
+      m_pserver->Send_to_dialogs_with_delay(message_note_highlight, msg, size);
+    }
+}
+
 void Cappdata::send_measure_to_practice_view(CMesure *pm, bool deletemeasure)
 {
   scmsg::Cmessage_coding coder;

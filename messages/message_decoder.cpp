@@ -251,7 +251,7 @@ bool Cmessage_coding::get_practice(t_practice_params *pp)
     {
       printf("Failed to parse the practice message data.\nMessage:\n");
       printf("%s\n", pr.DebugString().c_str());
-      return 0;
+      return false;
     }
   if (!pr.IsInitialized())
     {
@@ -371,7 +371,7 @@ bool Cmessage_coding::get_remadd_note(CNote *pn, bool *pbdelete)
     {
       printf("Failed to parse the note message data.\nMessage:\n");
       printf("%s\n", noteRA.DebugString().c_str());
-      return 0;
+      return false;
     }
   if (!noteRA.IsInitialized())
     {
@@ -383,6 +383,30 @@ bool Cmessage_coding::get_remadd_note(CNote *pn, bool *pbdelete)
     {
       pnotedesc = &noteRA.notedesc();
       get_note(pnotedesc, pn);
+    }
+  return true;
+}
+
+bool Cmessage_coding::get_note_highlight_message(int *pidentifier)
+{
+  string output;
+  scoreview::noteHighlight nh;
+
+  if (!nh.ParseFromString(m_msg_data))
+    {
+      printf("Failed to parse the note message data.\nMessage:\n");
+      printf("%s\n", nh.DebugString().c_str());
+      return false;
+    }
+  if (!nh.IsInitialized())
+    {
+      printf("Critical error: note message data is not properly initialised. Cannot allow this. Goodbye.\n");
+      exit(EXIT_FAILURE);
+    }
+  *pidentifier = -1;
+  if (nh.has_uniqueid())
+    {
+      *pidentifier = nh.uniqueid();
     }
   return true;
 }
@@ -546,7 +570,7 @@ bool Cmessage_coding::get_instrument_list(std::list<t_instrument> *plist)
     {
       printf("Failed to parse the instrument list message data.\nMessage:\n");
       printf("%s\n", inslist.DebugString().c_str());
-      return 0;
+      return false;
     }
   plist->clear();
   size = inslist.instruelts_size();
@@ -625,7 +649,7 @@ bool Cmessage_coding::get_audioIO_config(std::list<t_portaudio_api> *papis, t_ch
     {
       printf("Failed to parse the audio input/output config message data.\nMessage:\n");
       printf("%s\n", ioc.DebugString().c_str());
-      return 0;
+      return false;
     }
   if (ioc.has_current())
     {
@@ -680,7 +704,7 @@ bool Cmessage_coding::get_fileIO_message(std::string *ppath, std::string *pfile_
     }
   else
     {
-      printf("Error: missing required fiel in file io message.\n");
+      printf("Error: missing required field in file io message.\n");
       exit(EXIT_FAILURE);
       return false;
     }

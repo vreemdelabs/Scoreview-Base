@@ -72,7 +72,8 @@ Cappdata::Cappdata(string path, int width, int height):
   m_start_daytime(-1),
   m_viewtime(4.),
   m_play_timecode(0),
-  m_play_end_timecode(0)
+  m_play_end_timecode(0),
+  m_note_higlight_identifier(-1)
 {
 #ifdef PRINT_PATH
   const int csize = 4096;
@@ -397,7 +398,7 @@ void Cappdata::render_gui()
   if (pw != NULL && m_pscore != NULL)
     {
       //m_prenderer/*m_pviolin_renderer*/->render(pw, m_pscore, &tl);
-      m_prenderer->render(pw, m_pscore, m_instrument, m_instrument_identifier, &tl);
+      m_prenderer->render(pw, m_pscore, m_instrument, m_instrument_identifier, &tl, m_note_higlight_identifier);
       if (m_state == state_countdown || (m_state == state_only_countdown))
 	{
 	  draw_countdown(pw, countdown_time);

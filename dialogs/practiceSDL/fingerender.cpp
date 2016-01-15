@@ -108,7 +108,7 @@ bool CFingerRenderer::black_note(int octave, int note)
   return (note == 1 || note == 3 || note == 6 || note == 8 || note == 10);
 }
 
-void CFingerRenderer::render(Cgfxarea *pw, CScore *pscore, std::string instrument_name, int instrument_identifier, t_limits *pl)
+void CFingerRenderer::render(Cgfxarea *pw, CScore *pscore, std::string instrument_name, int instrument_identifier, t_limits *pl, int hnote_id)
 {
   clear_all();
   m_instrument = pscore->get_instrument(instrument_name, instrument_identifier);

@@ -471,6 +471,7 @@ void Cappdata::mousemove(int x, int y)
   Cgfxarea   *pw;
   t_coord    p;
   double     t1, t2;
+  int        note_id;
 
   //printf("mousemove\n");
   p.x = x;
@@ -560,6 +561,10 @@ void Cappdata::mousemove(int x, int y)
 	  if (m_pScoreEdit->mouse_move(m_pscore, m_pScorePlacement, p))
 	    {
 	      update_practice_view();
+	    }
+	  if (m_pScoreEdit->on_note_change(&note_id))
+	    {
+	      send_note_highlight(note_id);
 	    }
 	}
     }

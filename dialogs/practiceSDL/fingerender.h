@@ -38,7 +38,7 @@ class CFingerRenderer
   void clear_all();
   void set_viewtime(float viewtime);
   virtual void print_current_timecodes(Cgfxarea *pw, int color, double timecode, double viewtime);
-  virtual void render(Cgfxarea *pw, CScore *pscore, std::string instrument_name, int instrument_identifier, t_limits *pl);
+  virtual void render(Cgfxarea *pw, CScore *pscore, std::string instrument_name, int instrument_identifier, t_limits *pl, int hnote_id);
   bool black_note(int octave, int note);
 
  protected:

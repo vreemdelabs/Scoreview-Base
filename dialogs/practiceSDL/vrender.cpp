@@ -334,6 +334,7 @@ void CvRenderer::add_drawings(t_coord dim, int y, CNote *pn, t_notefreq *pnf, t_
     {
       // Coming note, right segment
       nd.lvl = lvl_background;
+      nd.note_id = pn->identifier();
       nd.bcircle = false;
       nd.string = pnf->string;
       nd.color = string_to_color(pnf);
@@ -359,7 +360,7 @@ void CvRenderer::add_drawings(t_coord dim, int y, CNote *pn, t_notefreq *pnf, t_
 	nd.rad = nd.h / 2.5;
       m_drawlist.push_back(nd);
       //printf("adding %s note x=%d y=%d w=%d h=%d dimw=%d dimh=%d\n", "coming", nd.x, nd.y, nd.w, nd.h, dim.x, dim.y);
-      // Add a gray little circle
+      // Add a gray little circle on the board
       if (fabs(m_f2n.note2frequ(m_baseAbsNote[pnf->string]) - pnf->f) > 0.5)
 	{
 	  nd.lvl = lvl_fingerboard;
@@ -380,6 +381,7 @@ void CvRenderer::add_drawings(t_coord dim, int y, CNote *pn, t_notefreq *pnf, t_
       // Note being played
       if (fabs(m_f2n.note2frequ(m_baseAbsNote[pnf->string]) - pnf->f) >= 0.)
 	{
+	  nd.note_id = pn->identifier();
 	  nd.lvl = lvl_top;
 	  nd.bcircle = true;
 	  nd.rad = noteheigth / 2;
@@ -396,6 +398,7 @@ void CvRenderer::add_drawings(t_coord dim, int y, CNote *pn, t_notefreq *pnf, t_
   if (false && pn->m_time < timecode && pn->m_time + pn->m_duration > timecode - passed_viewtime)
     {
       // Passed note segment
+      nd.note_id = pn->identifier();
       nd.lvl = lvl_background;
       nd.bcircle = false;
       nd.string = pnf->string;
@@ -455,7 +458,7 @@ int CvRenderer::reducecolor(int color)
   return color | alpha;
 }
 
-void CvRenderer::draw_note_drawings(erlvl level)
+void CvRenderer::draw_note_drawings(erlvl level, int hnote_id)
 {
   std::list<t_note_drawing>::iterator iter;
   t_note_drawing                     *pd;
@@ -477,11 +480,11 @@ void CvRenderer::draw_note_drawings(erlvl level)
 	  if (pd->y < m_playedy[pd->string] && pd->lvl == lvl_top)
 	    {
 	      color = STRING_GRAY; //reducecolor(color);
-	      masked_outline_color = NOTE_COLOR; //BORDEAUX;
+	      masked_outline_color = (hnote_id == pd->note_id)? WHITE : NOTE_COLOR; //BORDEAUX;
 	    }
 	  else
 	    {
-	      masked_outline_color = NOTE_COLOR;
+	      masked_outline_color = (hnote_id == pd->note_id)? WHITE : NOTE_COLOR;
 	    }
 	  center.x = pd->x;
 	  center.y = pd->y;
@@ -504,10 +507,11 @@ void CvRenderer::draw_note_drawings(erlvl level)
 	      fdim.y += 2 * offset;
 	      fpos.x -= offset;
 	      fpos.y -= offset;
+	      masked_outline_color = (hnote_id == pd->note_id)? WHITE : NOTE_COLOR;
 	      if (pd->rad > 4)
-		m_gfxprimitives->rounded_box(fpos, fdim, NOTE_COLOR, bantialiased, pd->rad);
+		m_gfxprimitives->rounded_box(fpos, fdim, masked_outline_color, bantialiased, pd->rad);
 	      else
-		m_gfxprimitives->box(fpos, fdim, NOTE_COLOR, bantialiased);
+		m_gfxprimitives->box(fpos, fdim, masked_outline_color, bantialiased);
 	      fpos.x = pd->x;
 	      fpos.y = pd->y;
 	      fdim.x = pd->w;
@@ -672,7 +676,7 @@ void CvRenderer::print_current_timecodes(Cgfxarea *pw, int color, double timecod
   m_gfxprimitives->print(text, m_font, fpos, fdim, color, blended, outline, outlinecolor);
 }
 
-void CvRenderer::render(Cgfxarea *pw, CScore *pscore, std::string instrument_name, int instru_identifier, t_limits *pl)
+void CvRenderer::render(Cgfxarea *pw, CScore *pscore, std::string instrument_name, int instru_identifier, t_limits *pl, int hnote_id)
 {
   t_coord pos;
   t_coord dim;
@@ -700,11 +704,11 @@ void CvRenderer::render(Cgfxarea *pw, CScore *pscore, std::string instrument_nam
   Draw_the_practice_end(pos, dim, pl);
   draw_finger_board(pw, lvl_background);
   check_visible_notes(pw, pscore, pl);
-  draw_note_drawings(lvl_background);
+  draw_note_drawings(lvl_background, hnote_id);
   draw_finger_board(pw, lvl_fingerboard);
   draw_strings(pw);
-  draw_note_drawings(lvl_fingerboard);
-  draw_note_drawings(lvl_top);
+  draw_note_drawings(lvl_fingerboard, hnote_id);
+  draw_note_drawings(lvl_top, hnote_id);
   print_current_timecodes(pw, WHITE, pl->current, m_viewtime);
 }
 

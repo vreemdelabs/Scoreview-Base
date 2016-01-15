@@ -48,6 +48,7 @@ enum eWiremessages
     network_message_instrument_list,
     network_message_score_transfer,
     network_message_note_transfer,
+    network_message_note_highlight,
     //----------------------------------------------------------------------
     // bidirectional
     //----------------------------------------------------------------------
@@ -81,6 +82,7 @@ enum edialog_message
     message_send_configuration,
     message_send_pa_devices_list,
     message_score_transfer,
-    message_note_transfer
+    message_note_transfer,
+    message_note_highlight
   };
 

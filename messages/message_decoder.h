@@ -83,6 +83,7 @@ class Cmessage_coding
 
   bool get_practice(t_practice_params *pp);
   bool get_remadd_note(CNote *pn, bool *pbdelete);
+  bool get_note_highlight_message(int *pidentifier);
   bool get_remadd_measure(CMesure *pm, bool *pbdelete);
   bool get_instrument_list(std::list<t_instrument> *plist);
   bool get_score_message(CScore *pscore);
@@ -102,6 +103,7 @@ class Cmessage_coding
   std::string create_practice_message(t_practice_params *pp);
   std::string create_close_message();
   std::string create_remadd_note_message(CNote *pn, bool bdelete);
+  std::string create_note_highlight_message(int identifier);
   std::string create_remadd_measure_message(CMesure *pm, bool bdelete);
   std::string create_instrument_list_message(std::list<t_instrument> *plist);
   std::string create_score_message(CScore *pscore);
