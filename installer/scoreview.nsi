@@ -21,6 +21,9 @@ InstallDirRegKey HKLM "Software\VREEMDELABS_scoreview" "Install_Dir"
 ; Request application privileges for Windows Vista
 RequestExecutionLevel admin
 
+; Compression choice
+SetCompressor /SOLID lzma
+
 ;--------------------------------
 
 ; Pages
@@ -124,6 +127,7 @@ Section "Scoreview (required)"
   File "..\app\data\snrest.obj"
   File "..\app\data\tsnrest.obj"
   File "..\app\data\vfboard.obj"
+  File "..\app\data\gfboard.obj"
   File "..\app\data\wrest.obj"
 
   SetOutPath $INSTDIR
@@ -236,6 +240,7 @@ Section "Uninstall"
   Delete $INSTDIR\data\snrest.obj
   Delete $INSTDIR\data\tsnrest.obj
   Delete $INSTDIR\data\vfboard.obj
+  Delete $INSTDIR\data\gfboard.obj
   Delete $INSTDIR\data\wrest.obj
   
   RMDir  $INSTDIR\data

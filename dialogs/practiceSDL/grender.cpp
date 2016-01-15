@@ -125,7 +125,7 @@ void CgRenderer::draw_finger_board(Cgfxarea *pw, erlvl level)
     {
       notef.string = 0;
       notef.f = m_f2n.note2frequ(absnote + i);
-      pos.y = note_2_y(idim, &notef);
+      pos.y = prevy = note_2_y(idim, &notef);
       pos.x = get_time0_x_limit_from_y(idim, (int)pos.y, true); // Fret board's left side
       fretdim.x = get_time0_x_limit_from_y(idim, (int)pos.y, false) - pos.x; // Fret board's right side
       fretdim.y = 0.001 * dim.y;

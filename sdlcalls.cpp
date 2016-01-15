@@ -1,6 +1,6 @@
 /*
  Scoreview (R)
- Copyright (C) 2015 Patrick Areny
+ Copyright (C) 2015 2016 Patrick Areny
  All Rights Reserved.
 
  Scoreview is free software: you can redistribute it and/or modify
@@ -82,7 +82,7 @@ int init_SDL(SDL_Window **psdlwindow, SDL_GLContext *GLContext, int x, int y, in
   SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
   SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
   //
-  *psdlwindow = SDL_CreateWindow("ScoreView (beta release dec 2015)",
+  *psdlwindow = SDL_CreateWindow("ScoreView (beta release jan 2016)",
 				 x,
 				 y,
 				 width, height,

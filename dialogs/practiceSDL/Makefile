@@ -8,7 +8,7 @@ OPERATINGON=__WINDOWS
 else
 OPERATINGON=__LINUX
 endif
-#RELEASE=TRUE
+RELEASE=TRUE
 
 CC = g++
 INCLUDES = "/usr/include/"

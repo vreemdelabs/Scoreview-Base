@@ -1,6 +1,6 @@
 /*
  Scoreview (R)
- Copyright (C) 2015 Patrick Areny
+ Copyright (C) 2015 2016 Patrick Areny
  All Rights Reserved.
 
  Scoreview is free software: you can redistribute it and/or modify

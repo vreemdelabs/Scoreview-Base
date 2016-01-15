@@ -9,7 +9,7 @@ BEGIN
     BLOCK "080904E4"
     BEGIN
       VALUE "CompanyName", "Vreemdelabs"
-      VALUE "FileDescription", "Music analyser"
+      VALUE "FileDescription", "Scoreview"
       VALUE "FileVersion", "1.0 Beta"
       VALUE "InternalName", "Scoreview"
       VALUE "LegalCopyright", "Copyright 2015 Patrick Areny"
