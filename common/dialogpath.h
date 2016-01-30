@@ -18,10 +18,10 @@
 */
 
 #define STORAGE_DIALOG_NAME       "storedialog."
-#define STORAGE_DIALOG_PATH       "./dialogs/save_openFLTK/"
+#define STORAGE_DIALOG_PATH       "./"
 #define ADDINSTRUMENT_DIALOG_NAME "addinstrument."
-#define ADDINSTRUMENT_DIALOG_PATH "./dialogs/addinstrumentFLTK/"
+#define ADDINSTRUMENT_DIALOG_PATH "./"
 #define PRACTICE_DIALOG_NAME      "practice."
-#define PRACTICE_DIALOG_PATH      "./dialogs/practiceSDL/"
+#define PRACTICE_DIALOG_PATH      "./"
 #define CONFIG_DIALOG_NAME        "config."
-#define CONFIG_DIALOG_PATH        "./dialogs/configFLTK/"
+#define CONFIG_DIALOG_PATH        "./"

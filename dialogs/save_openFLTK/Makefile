@@ -68,7 +68,7 @@ EXE_NAME=$(appname).bin
 else
 EXE_NAME=$(appname).exe
 endif
-OUTPUT_DIR=../../app/dialogs/save_openFLTK/
+OUTPUT_DIR=../../app/
 
 clean:
 	rm -f $(OBJDIR)/*.o

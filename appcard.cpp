@@ -214,7 +214,7 @@ void Cappdata::create_cards_layout()
   // Open a view of the notes on the instrument
   set_coord(&pos, xpos, hypos);
   area = Cgfxarea(pos, dim, wsize, (char*)CARD_PLACEMENT);
-  title = "Finger placement";
+  title = "Finger Placement";
   cardimg = basedir + string("cardpracticew.png");
   pc = new Ccard(area, title, cardimg, m_gfxprimitives);
   pc->add_info_line(string("Action"));
@@ -283,8 +283,8 @@ void Cappdata::create_cards_layout()
   pc->add_info_line(string("Helper"));
   pc->add_info_line(string("- select: play a zone"));
   pc->add_info_line(string("- R click: add a note"));
+  pc->add_info_line(string("- R click + w: play a note"));
   pc->add_info_line(string("- e + L click: add a bar"));
-  pc->add_info_line(string("- w + L click: play a note"));
   pc->add_info_line(string("- wheel: fequency zoom"));
   m_cardlayout->add(pc);
 

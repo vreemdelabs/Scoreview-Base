@@ -24,6 +24,9 @@ RequestExecutionLevel admin
 ; Compression choice
 SetCompressor /SOLID lzma
 
+!define MUI_PRODUCT "Scoreview Beta Ver. 1.0"
+!define INSTALL_APPDATA "$APPDATA\scoreview\"
+
 ;--------------------------------
 
 ; Pages
@@ -83,14 +86,10 @@ Section "Scoreview (required)"
   File "..\app\SDL2_ttf.dll"
   File "..\app\zlib1.dll"
   File "..\app\scoreview.exe"
-  SetOutPath "$INSTDIR\dialogs\addinstrumentFLTK\"
-  File "..\app\dialogs\addinstrumentFLTK\addinstrument.exe"
-  SetOutPath "$INSTDIR\dialogs\configFLTK\"
-  File "..\app\dialogs\configFLTK\config.exe"
-  SetOutPath "$INSTDIR\dialogs\practiceSDL\"
-  File "..\app\dialogs\practiceSDL\practice.exe"
-  SetOutPath "$INSTDIR\dialogs\save_openFLTK\"
-  File "..\app\dialogs\save_openFLTK\storedialog.exe"
+  File "..\app\addinstrument.exe"
+  File "..\app\config.exe"
+  File "..\app\practice.exe"
+  File "..\app\storedialog.exe"
   SetOutPath "$INSTDIR\data\"
   File "..\app\data\ArmWrestler.ttf"
   File "..\app\data\VeraMono.ttf"
@@ -142,16 +141,36 @@ Section "Scoreview (required)"
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\scoreview" "NoRepair" 1
   WriteUninstaller "uninstall.exe"
   
+  ;	The application logfile is in the user space
+  ;System::Call 'shell32::SHGetSpecialFolderPath(i $HWNDPARENT, t .r1, i ${CSIDL_APPDATA}, i0)i.r0'
+  ;!appendfile "$1\applog.txt" ""
+  SetOutPath ${INSTALL_APPDATA}
+  
+  !appendfile "applog.txt" "empty"
+
+  ; Runing directory
+  SetOutPath $INSTDIR
+  
 SectionEnd
 
 ; Optional section (can be disabled by the user)
 Section "Start Menu Shortcuts"
 
   CreateDirectory "$SMPROGRAMS\scoreview"
-  CreateShortCut "$SMPROGRAMS\scoreview\Uninstall.lnk" "$INSTDIR\uninstall.exe" "" "$INSTDIR\uninstall.exe" 0
-  CreateShortCut "$SMPROGRAMS\scoreview\scoreview.lnk" "$INSTDIR\scoreview.exe" "" "$INSTDIR\scoreview.exe" 0  
+  CreateShortCut  "$SMPROGRAMS\scoreview\Uninstall.lnk" "$INSTDIR\uninstall.exe" "" "$INSTDIR\uninstall.exe" 0
+  CreateShortCut  "$SMPROGRAMS\scoreview\scoreview.lnk" "$INSTDIR\scoreview.exe" "" "$INSTDIR\scoreview.exe" 0  
+  CreateShortCut  "$SMPROGRAMS\scoreview\logfile.lnk" "${INSTALL_APPDATA}applog.txt"
 SectionEnd
 
+Section "Desktop shortcut"
+
+  ;create desktop shortcut
+  CreateShortCut "$DESKTOP\${MUI_PRODUCT}.lnk" "$INSTDIR\scoreview.exe" ""
+SectionEnd
+
+Section "Install for all the users"
+  SetShellVarContext all
+SectionEnd
 ;--------------------------------
 
 ; Uninstaller
@@ -201,10 +220,10 @@ Section "Uninstall"
   Delete $INSTDIR\SDL2_ttf.dll
   Delete $INSTDIR\zlib1.dll
   Delete $INSTDIR\scoreview.exe
-  Delete $INSTDIR\dialogs\addinstrumentFLTK\addinstrument.exe
-  Delete $INSTDIR\dialogs\configFLTK\config.exe
-  Delete $INSTDIR\dialogs\practiceSDL\practice.exe
-  Delete $INSTDIR\dialogs\save_openFLTK\storedialog.exe
+  Delete $INSTDIR\addinstrument.exe
+  Delete $INSTDIR\config.exe
+  Delete $INSTDIR\practice.exe
+  Delete $INSTDIR\storedialog.exe
   Delete $INSTDIR\data\ArmWrestler.ttf
   Delete $INSTDIR\data\VeraMono.ttf
   Delete $INSTDIR\data\cardaddinstr.png
@@ -242,7 +261,14 @@ Section "Uninstall"
   Delete $INSTDIR\data\vfboard.obj
   Delete $INSTDIR\data\gfboard.obj
   Delete $INSTDIR\data\wrest.obj
-  
+
+  ; Delete the desktop shortcut
+  Delete "$DESKTOP\${MUI_PRODUCT}.lnk"
+
+  ; Delete the log file and his link
+  Delete "$SMPROGRAMS\scoreview\logfile.lnk"
+  Delete "${INSTALL_APPDATA}\applog.txt"
+
   RMDir  $INSTDIR\data
   RMDir  $INSTDIR\dialogs\
 

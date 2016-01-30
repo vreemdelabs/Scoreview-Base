@@ -27,7 +27,7 @@
 #define CARD_NOTEBLOCK "noteblocking"
 #define CARD_PRACTICE  "practice"
 #define CARD_PRACSPEED "Slow Down"
-#define CARD_PLACEMENT "fingerplacement"
+#define CARD_PLACEMENT "Practice"
 #define CARD_AUTOBEAM  "autobeam"
 #define CARD_CHORDFUSE "chordfuse"
 

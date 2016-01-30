@@ -29,7 +29,7 @@
 
 #define TXTCOLOR 0xFFFEFEFE
 
-#define MAX_INTRACK_PLAY_TIME 3.
+#define MAX_INTRACK_PLAY_TIME 20.
 #define PRACTICE_LOOP_DELAY 1.
 
 enum eloopstate

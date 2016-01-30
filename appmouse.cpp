@@ -296,18 +296,26 @@ void Cappdata::mouseclickright(int x, int y)
 	}
       if ((strcmp(pw->m_name, "spectre") == 0 && pw->is_in(p)))
 	{
-	  if (m_kstates.is_pressed('g'))
+	  if (m_kstates.is_pressed('w'))
 	    {
-	      SDL_ShowCursor(SDL_DISABLE);
-	      m_appstate = statemovehand;
+	      // Play the note frequency slot and his harmonics
+	      m_appstate = stateselectharmonics;
 	    }
 	  else
 	    {
-	      // Add note state
-	      m_appstate = stateaddnotedirect;
+	      if (m_kstates.is_pressed('g'))
+		{
+		  SDL_ShowCursor(SDL_DISABLE);
+		  m_appstate = statemovehand;
+		}
+	      else
+		{
+		  // Add note state
+		  m_appstate = stateaddnotedirect;
 #ifdef __DEBUG
-	      printf("stateaddnotedirect\n");
+		  printf("stateaddnotedirect\n");
 #endif
+		}
 	    }
 	}
       if ((strcmp(pw->m_name, "timescale") == 0 && pw->is_in(p)))
@@ -353,6 +361,7 @@ void Cappdata::mouseclickleft(int x, int y)
 	      switch (m_appstate)
 		{
 		case statewait:
+		  /*
 		  if (m_kstates.is_pressed('a'))
 		    {
 		      // Add note state
@@ -362,33 +371,25 @@ void Cappdata::mouseclickleft(int x, int y)
 		      //printf("stateaddnote\n");
 		    }
 		  else
-		    if (m_kstates.is_pressed('w'))
-		      {
-			// Play the note frequency slot and his harmonics
-			m_appstate = stateselectharmonics;
-			m_cstart.x = x;
-			m_cstart.y = y;
-			//printf("stateselectharmonics\n");
-		      }
-		    else
-		      {
-			if (m_kstates.is_pressed('e'))
-			  {
-			    // Create the measure
-			    m_appstate = stateaddmeasure;
-			    m_cstart.x = x;
-			    m_cstart.y = y;
-			    //printf("stateaddmeasure\n");
-			  }
-			else
-			  {
-			    // Play an area
-			    m_appstate = stateselectsound;
-			    m_cstart.x = x;
-			    m_cstart.y = y;
-			    //printf("stateselectsound\n");
-			  }
-		      }
+		  */
+		    {
+		      if (m_kstates.is_pressed('e'))
+			{
+			  // Create the measure
+			  m_appstate = stateaddmeasure;
+			  m_cstart.x = x;
+			  m_cstart.y = y;
+			  //printf("stateaddmeasure\n");
+			}
+		      else
+			{
+			  // Play an area
+			  m_appstate = stateselectsound;
+			  m_cstart.x = x;
+			  m_cstart.y = y;
+			  //printf("stateselectsound\n");
+			}
+		    }
 		default:
 		  break;
 		}
@@ -439,7 +440,7 @@ void Cappdata::mousedidnotmove(bool bmoved)
     {
       return;
     }
-  if (m_appstate == stateaddnotedirect)
+  if (m_appstate == stateaddnotedirect || m_appstate == stateselectharmonics)
     {
       pw = m_layout->get_first();
       while (pw != NULL)
@@ -483,35 +484,30 @@ void Cappdata::mousemove(int x, int y)
 	{
 	  switch (m_appstate)
 	    {
-	    case stateaddnote:
+	      //case stateaddnote:
 	    case stateaddnotedirect:
 	    case stateselectharmonics:
 	      {
-		if (m_kstates.is_pressed('a') ||
-		    m_kstates.is_pressed('w') ||
-		    m_appstate == stateaddnotedirect)
-		  {		    
-		    double  timecode;
-		    double  duration;
-		    float   f;
-		    t_coord pos;
-		    t_coord dim;
-		   
-		    m_cstart.y = y;
-		    pw = m_layout->get_area((char*)"spectre");
-		    if (pw != NULL)
-		      {
-			pw->get_pos(&pos);
-			pw->get_dim(&dim);
-			LOCK;
-			t1 = getSpectrum_time_fromX(m_cstart.x, pos, dim, pshared_data->timecode, pshared_data->viewtime);
-			t2 = getSpectrum_time_fromX(x, pos, dim, pshared_data->timecode, pshared_data->viewtime);
-			timecode = t1 < t2? t1 : t2;
-			duration = fabs(t1 - t2);
-			UNLOCK;
-			f = getSpectrum_freq_fromY(y, pos, dim, m_localfbase, m_localfmax);
-			m_pScorePlacement->change_tmp_note(timecode, duration, f);
-		      }
+		double  timecode;
+		double  duration;
+		float   f;
+		t_coord pos;
+		t_coord dim;
+		
+		m_cstart.y = y;
+		pw = m_layout->get_area((char*)"spectre");
+		if (pw != NULL)
+		  {
+		    pw->get_pos(&pos);
+		    pw->get_dim(&dim);
+		    LOCK;
+		    t1 = getSpectrum_time_fromX(m_cstart.x, pos, dim, pshared_data->timecode, pshared_data->viewtime);
+		    t2 = getSpectrum_time_fromX(x, pos, dim, pshared_data->timecode, pshared_data->viewtime);
+		    timecode = t1 < t2? t1 : t2;
+		    duration = fabs(t1 - t2);
+		    UNLOCK;
+		    f = getSpectrum_freq_fromY(y, pos, dim, m_localfbase, m_localfmax);
+		    m_pScorePlacement->change_tmp_note(timecode, duration, f);
 		  }
 	      }
 	      break;
@@ -647,16 +643,30 @@ void Cappdata::mouseupright(int x, int y)
       break;
     case statemove:
       {
-	pw = m_layout->get_first();
-	while (pw != NULL)
-	  {
-	    if (strcmp(pw->m_name, "track") == 0 && pw->is_in(p))
-	      {
-		move_trackpos_to(p.x, pw, false);
-	      }
-	    pw = m_layout->get_next();
-	  }
+	pw = m_layout->get_area((char*)"track");
+	assert(pw != NULL);
+	move_trackpos_to(p.x, pw, false);
 	//SDL_ShowCursor(SDL_ENABLE);
+	m_appstate = statewait;
+      }
+      break;
+    case stateselectharmonics:
+      {
+	if (m_kstates.is_pressed('w'))
+	  {
+	    // ----------------------------------------
+	    // Filter and play the sound in the box
+	    // If a selection state is already activated,
+	    // do not care if inside spectre.
+	    pw = m_layout->get_area((char*)"spectre");
+	    assert(pw != NULL);
+	    stick_to_area(pw, x, y, cx, cy);
+	    pw->get_pos(&pos);
+	    pw->get_dim(&dim);
+	    create_filter_play_harmonics_message(cx, cy, pos, dim);
+	  }
+	// Cleat the tmp note
+	m_pScorePlacement->set_tmp_note(&m_empty_note);
 	m_appstate = statewait;
       }
       break;
@@ -1035,9 +1045,8 @@ void Cappdata::mouseupleft(int x, int y)
   // related area dimensions.
   switch (m_appstate)
     {
-    case stateaddnote:
+    //case stateaddnote:
     case stateaddmeasure:
-    case stateselectharmonics:
     case stateselectsound:
     case stateeditscore:
       {
@@ -1071,14 +1080,6 @@ void Cappdata::mouseupleft(int x, int y)
 	{
 	  add_note(cx, cy, pos, dim);
 	}
-      m_appstate = statewait;
-      break;
-    case stateselectharmonics:
-      if (m_kstates.is_pressed('w'))
-      {
-	// Filter and play the sound in the box
-	create_filter_play_harmonics_message(cx, cy, pos, dim);
-      }
       m_appstate = statewait;
       break;
     case stateaddmeasure:
