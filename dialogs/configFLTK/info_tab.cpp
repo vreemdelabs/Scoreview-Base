@@ -1,6 +1,6 @@
 /*
  Scoreview (R)
- Copyright (C) 2015 Patrick Areny
+ Copyright (C) 2015-2016 Patrick Areny
  All Rights Reserved.
 
  Scoreview is free software: you can redistribute it and/or modify
@@ -34,7 +34,7 @@ void create_info_tab(int x, int y, int w, int h)
     pbuff = new Fl_Text_Buffer();
     ptext->buffer(pbuff);
     pbuff->text("\n\n"
-		"       Scoreview (tm) beta test version, dec 2015.\n"
+		" Scoreview (tm) beta test version, Revision 1, Jan 2016.\n"
 		"\n"
 		"            Copyright 2015 vreemdelabs.com\n"
 		"\n"

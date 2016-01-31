@@ -228,7 +228,8 @@ bool Copenclspectrometer::enqueue_fir_kernels(cl_event *ptimingevents)
   size_t  local_work_size[1];
   cl_int  err;
   int     samplenum;
-
+  size_t  max_workgroup_size;
+ 
   //-----------------------------------------------------------------------------
   //
   // Enqueue a FIR filtering kernel
@@ -240,6 +241,13 @@ bool Copenclspectrometer::enqueue_fir_kernels(cl_event *ptimingevents)
     }
   if (m_bhalfband)
     {
+      err = clGetKernelWorkGroupInfo(m_kernel, m_device, CL_KERNEL_WORK_GROUP_SIZE,
+				     sizeof(max_workgroup_size), &max_workgroup_size, NULL);
+      if (!m_bdefautlsizeswritten)
+	{
+	  printf("max fir kernel workgroup size=%d\n", (int)max_workgroup_size);
+	  m_bdefautlsizeswritten = true;
+	}
       // Fir parameters
       err = clEnqueueWriteBuffer(m_queue, m_fircfg, CL_TRUE, 0, sizeof(m_kfirparams), &m_kfirparams, 0, NULL, NULL);
       if (err != CL_SUCCESS)
@@ -258,8 +266,9 @@ bool Copenclspectrometer::enqueue_fir_kernels(cl_event *ptimingevents)
       // Overflow compensated with a test inside the kernel
       samplenum = m_kparams.tracksize;
       global_work_size[0] = (samplenum / 256) * 256;
-      local_work_size[0] = 256;
-      //printf("Queuing a kernel of %lu local=%lu\n", global_work_size[0], local_work_size[0]);
+      //local_work_size[0] = 256;
+      local_work_size[0] = 256 < max_workgroup_size? 256 : max_workgroup_size;
+      //printf("Queuing a kernel of op%lu local=%lu\n", global_work_size[0], local_work_size[0]);
       err = clEnqueueNDRangeKernel(m_queue, m_firkernel, workdim, NULL, global_work_size, local_work_size, 0, NULL, &ptimingevents[1]);
       if (err < 0)
 	{

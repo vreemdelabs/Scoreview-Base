@@ -5,11 +5,16 @@
 
 ;--------------------------------
 
+;; Modern User Interface
+;!include "MUI.nsh"
+
+;--------------------------------
+
 ; The name of the installer
 Name "ScoreviewInstaller"
 
 ; The file to write
-OutFile "ScoreviewInstall.exe"
+OutFile "ScoreviewInstallBetaRev1.exe"
 
 ; The default installation directory
 InstallDir $PROGRAMFILES\vreemdelabs\scoreview
@@ -24,7 +29,7 @@ RequestExecutionLevel admin
 ; Compression choice
 SetCompressor /SOLID lzma
 
-!define MUI_PRODUCT "Scoreview Beta Ver. 1.0"
+!define MUI_PRODUCT "Scoreview Beta Ver. 1 Rev1"
 !define INSTALL_APPDATA "$APPDATA\scoreview\"
 
 ;--------------------------------
@@ -146,7 +151,7 @@ Section "Scoreview (required)"
   ;!appendfile "$1\applog.txt" ""
   SetOutPath ${INSTALL_APPDATA}
   
-  !appendfile "applog.txt" "empty"
+  File "applog.txt"
 
   ; Runing directory
   SetOutPath $INSTDIR

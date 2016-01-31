@@ -101,6 +101,7 @@ private:
   cl_mem           m_hannwindow;
   float            *m_windowdata;
   int              m_maxwindowsize;
+  bool             m_bdefautlsizeswritten;
   // FIR filtering
   cl_mem           m_fircoef;
   cl_mem           m_firsamplebuffer;

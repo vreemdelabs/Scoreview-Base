@@ -57,6 +57,7 @@ Copenclspectrometer::Copenclspectrometer(int samplingf, int wx, int wy,
       m_pattack[i] = 0;
       m_pdecay[i] = 0;
     }
+  m_bdefautlsizeswritten = false;
 }
 
 Copenclspectrometer::~Copenclspectrometer()
@@ -477,17 +478,24 @@ int Copenclspectrometer::opencl_dft(float *psamples, int samplenum, int start, i
       perror("Couldn't find the maximum work-group size");
       exit(EXIT_FAILURE);
     }
+  size_t max_workgroup_size;
+  err = clGetKernelWorkGroupInfo(m_kernel, m_device, CL_KERNEL_WORK_GROUP_SIZE,
+				 sizeof(max_workgroup_size), &max_workgroup_size, NULL);
+  if (!m_bdefautlsizeswritten)
+    {
+      printf("max workgroup size=%d\n", (int)max_workgroup_size);
 #ifdef _DEBUG
-  size_t prefered_workgroup_multiple;
-  err = clGetKernelWorkGroupInfo(m_kernel, m_device, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE,
-				 sizeof(prefered_workgroup_multiple), &prefered_workgroup_multiple, NULL);
-  //printf("The kernel workgroup size is %d, the prefered size multiple is %d\n", (int)workgroup_size, (int)prefered_workgroup_multiple);
-
-  size_t wrk_sizes[3];
-  err = clGetKernelWorkGroupInfo(m_kernel, m_device, CL_KERNEL_COMPILE_WORK_GROUP_SIZE,
-				 sizeof(wrk_sizes), &wrk_sizes, NULL);
-  //printf("The kernel compile workgroup sizes are %d %d %d\n", (int)wrk_sizes[0], (int)wrk_sizes[1], (int)wrk_sizes[2]);
+      size_t prefered_workgroup_multiple;
+      err = clGetKernelWorkGroupInfo(m_kernel, m_device, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE,
+				     sizeof(prefered_workgroup_multiple), &prefered_workgroup_multiple, NULL);
+      //printf("The kernel workgroup size is %d, the prefered size multiple is %d\n", (int)workgroup_size, (int)prefered_workgroup_multiple);
+      
+      size_t wrk_sizes[3];
+      err = clGetKernelWorkGroupInfo(m_kernel, m_device, CL_KERNEL_COMPILE_WORK_GROUP_SIZE,
+				     sizeof(wrk_sizes), &wrk_sizes, NULL);
+      //printf("The kernel compile workgroup sizes are %d %d %d\n", (int)wrk_sizes[0], (int)wrk_sizes[1], (int)wrk_sizes[2]);
 #endif
+    }
   // Q
   
   //-----------------------------------------------------------------------------
@@ -557,10 +565,18 @@ int Copenclspectrometer::opencl_dft(float *psamples, int samplenum, int start, i
     updatew = width;
   const size_t global_work_size[2] = {height, updatew};  // Total numer of work items = pixels in output image
   while (workgroup_size > height)
-    workgroup_size /= 2;
-  const size_t local_work_size[2] = {workgroup_size, 1}; // 
+    {
+      workgroup_size /= 2;
+    }
+  size_t worksizey = 1;
+  while (workgroup_size > max_workgroup_size)
+    {
+      workgroup_size /= 2;
+      //worksizey = worksizey * 2;
+    }
+  const size_t local_work_size[2] = {workgroup_size, worksizey}; // 
   //const size_t local_work_size[2] = {1, workgroup_size};  // 97ms (one colum of spectrum) Must not exceed CL_DEVICE_MAX_WORK_GROUP_SIZE.
-  //printf("updatewidth=%d workgroupsize=%d\n", local_work_size[1], local_work_size[0]);
+  //printf("updatewidth=%d workgroupsize=%d\n", local_work_size[1], (int)local_work_size[0]);
   err = clEnqueueNDRangeKernel(m_queue, m_kernel, workdim, NULL, global_work_size, local_work_size, 0, NULL, timing_events);
   if (err != CL_SUCCESS)
     {

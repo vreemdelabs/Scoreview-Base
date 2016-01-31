@@ -112,7 +112,7 @@ int main(int argc, char **argv)
   int            width;
   int            height;
   Cappdata      *app;
- 
+
   width = 1024 + 12;
   height = 512 + 256 + 64;
   open_log_file();
