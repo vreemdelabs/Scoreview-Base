@@ -23,10 +23,18 @@
 #include <list>
 #include <vector>
 
+#ifdef __ANDROID__
+#include <SDL.h>
+#include <SDL_ttf.h>
+#include <SDL_image.h>
+#include <EGL/egl.h>
+#include <GLES2/gl2.h>
+#else
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
-#include <GL/gl.h>
+#include <GL/glew.h>
+#endif
 
 #include "gfxareas.h"
 #include "mesh.h"
@@ -258,6 +266,17 @@ void CpictureList::open_practice_drawings(string imagefile)
       add_picture_from_area(dim, srcrect, img, string("blackkeypushed"));
       srcrect.x = 2 * 32 + 3;
       add_picture_from_area(dim, srcrect, img, string("blackkeytobepressed"));
+      //
+      srcrect.x = 59;
+      srcrect.y = 66;
+      dim.x =  7;
+      dim.y = 12;
+      srcrect.w = dim.x;
+      srcrect.h = dim.y;
+      add_picture_from_area(dim, srcrect, img, string("string"));
+      srcrect.x = 59;
+      srcrect.y = 78;
+      add_picture_from_area(dim, srcrect, img, string("string_played"));
       //
       SDL_FreeSurface(img);
     }

@@ -52,6 +52,7 @@
 #include "card.h"
 #include "cardnames.h"
 #include "messages.h"
+#include "tcp_message_receiver.h"
 #include "messages_network.h"
 //#include "messages_decoder.h"
 #include "app.h"
@@ -537,8 +538,12 @@ void Cappdata::enable_card_function(Ccard *pc)
 	{
 	  printf("opening config dialog\n");
 	  m_pserver->Send_to_dialogs(message_open_config_dialog, "", 0);
-	  pc->activate_card(bactivenext);
 	}
+      else
+	{
+	  m_pserver->Send_to_dialogs(message_close_config_dialog, "", 0);	  
+	}
+      pc->activate_card(bactivenext);
     }
   // Action disabled by a return message only
   if (pc->same_name((char*)CARD_OPENSAVE))
@@ -546,16 +551,24 @@ void Cappdata::enable_card_function(Ccard *pc)
       if (bactivenext)
 	{
 	  m_pserver->Send_to_dialogs(message_open_storage_dialog, "", 0);
-	  pc->activate_card(bactivenext);
 	}
+      else
+	{
+	  m_pserver->Send_to_dialogs(message_close_storage_dialog, "", 0);	  
+	}
+      pc->activate_card(bactivenext);
     }
   if (pc->same_name((char*)CARD_ADDINSTR))
     {
       if (bactivenext)
 	{
 	  m_pserver->Send_to_dialogs(message_open_addinstrument_dialog, "", 0);
-	  pc->activate_card(bactivenext);
 	}
+      else
+	{
+	  m_pserver->Send_to_dialogs(message_close_addinstrument_dialog, "", 0);	  
+	}
+      pc->activate_card(bactivenext);
     }
   if (pc->same_name((char*)CARD_NOTEBLOCK))
     {
@@ -566,7 +579,11 @@ void Cappdata::enable_card_function(Ccard *pc)
       if (bactivenext)
 	{
 	  m_pserver->Send_to_dialogs(message_open_practice_dialog, "", 0);
-	  pc->activate_card(bactivenext);
+	  pc->activate_card(bactivenext); // ???
+	}
+      else
+	{
+	  m_pserver->Send_to_dialogs(message_close_practice_dialog, "", 0);	  
 	}
     }
   if (pc->same_name((char*)CARD_CHORDFUSE))

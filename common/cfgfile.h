@@ -38,6 +38,7 @@ class Cxml_cfg_file_decoder
   void read_record_params(bool *pbrecord_at_start, bool *pbnotappend_to_saved);
   void read_sound_io_params(t_channel_select_strings *chs);
   bool read_music_path(std::string *pmusic_path);
+  bool read_audio_files_path(std::string *paudio_file_path);
   void read_edit_params(bool *pautobeam, bool *pchordfuse);
   bool close();
 
@@ -51,6 +52,7 @@ class Cxml_cfg_file_decoder
   void write_record_params(bool brecord_at_start, bool bnotappend_to_saved);
   void write_sound_io_params(t_channel_select_strings *chs);
   void write_music_path(std::string music_path);
+  void write_audio_files_path(std::string audio_file_path);
   void write_edit_params(bool autobeam, bool chordfuse);
 
  private:

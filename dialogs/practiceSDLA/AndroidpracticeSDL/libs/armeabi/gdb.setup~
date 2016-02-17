@@ -1,0 +1,3 @@
+set solib-search-path ./obj/local/armeabi
+source /home/patrick/android/android-ndk-r10e/prebuilt/common/gdb/common.setup
+directory /home/patrick/android/android-ndk-r10e/platforms/android-21/arch-arm/usr/include jni/SDL/include jni/SDL2_image jni/SDL2_image/external/libpng-1.6.2 jni/SDL2_net jni/SDL2_ttf jni/SDL2_ttf/external/freetype-2.4.12/include jni/src/../SDL/include jni/src/../SDL2_image/ jni/src/../SDL2_ttf/ jni/src/../SDL2_net/ jni/src/../../../../../messages jni/src/../../../../../meshloader jni/src/../protobuf// jni/src/../../../../../common/ jni/src/../protobuf/src/ jni/src/../glm-master/ /home/patrick/android/android-ndk-r10e/sources/cxx-stl/stlport/stlport /home/patrick/android/android-ndk-r10e/sources/cxx-stl//gabi++/include jni/protobuf/src

@@ -24,12 +24,8 @@
 
 #include <errno.h>
 #ifdef __LINUX
-//#include <sys/types.h>
-//#include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-//#include <syslog.h>
-//#include <signal.h>
 #else
 #include <winsock2.h>
 #include <windows.h>
@@ -107,9 +103,8 @@ void read_cb(struct bufferevent *pbev, void *pappdata)
 	case network_message_configuration:
 	  {
 	    t_appconfig cfg;
-	    
-	    coder.get_config(&cfg);
 
+	    coder.get_config(&cfg);
 	    papp->bstartrecord = cfg.recordAtStart;
 	    papp->bnotappendtoopen = cfg.doNotChangeOpenedFiles;
 	    printf("received config %d %d\n", papp->bstartrecord, papp->bnotappendtoopen);

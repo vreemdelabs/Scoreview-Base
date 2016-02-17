@@ -21,13 +21,30 @@
 #include <vector>
 #include <iterator>
 
+#ifdef __ANDROID__
+// Android
+#include <SDL.h>
+#include <SDL_ttf.h>
+#include <EGL/egl.h>
+#include <GLES2/gl2.h>
+#else
+// Linux and windows
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
-
 //#include <GL/gl.h>
 //#include <GL/glu.h>
 #include <GL/glew.h>
 //#include <arb_multisample.h>
+#endif
+
+// Operations on matrices
+#define  GLM_FORCE_CXX98 
+#define  GLM_PRECISION_MEDIUMP_INT
+#define  GLM_PRECISION_HIGHP_FLOAT
+#define  GLM_FORCE_RADIANS
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include "gfxareas.h"
 #include "mesh.h"
@@ -64,7 +81,8 @@ CGL2Dprimitives::CGL2Dprimitives(SDL_Window *psdl_window, SDL_GLContext GLContex
   m_w(scr_w),
   m_h(scr_h),
   m_transfert_texture(NULL),
-  m_spectrum_texture(NULL)
+  m_spectrum_texture(NULL),
+  m_stack_index(0)
 {
   //SetLogicalSize(scr_h, scr_w); The work texture must be created last or it will crush the next texture when reallocated
   m_reallocMesh.set_name(string("reallocmesh"));
@@ -80,6 +98,10 @@ CGL2Dprimitives::~CGL2Dprimitives()
       delete *iter;
       iter++;
     }
+  glDeleteProgram(m_sh.program_color);
+  glDeleteProgram(m_sh.program_texture);
+  glDeleteBuffers(1, &m_vbo_vertexbuffer);
+  glDeleteBuffers(1, &m_ibo_triangles);
   destroy_work_texture();
   destroy_sp_texture();
 }
@@ -102,6 +124,7 @@ void CGL2Dprimitives::set_clear_color(int color)
   unsigned char R, G, B, A;
   float         fR, fG, fB, fA;
 
+  m_clear_color = color;
   R = color & 0xFF;
   G = (color >> 8) & 0xFF;
   B = (color >> 16) & 0xFF;
@@ -115,6 +138,7 @@ void CGL2Dprimitives::set_clear_color(int color)
 
 int CGL2Dprimitives::init_OpenGL()
 {
+#ifndef __ANDROID__
   GLenum err = glewInit();
   if (GLEW_OK != err)
     {
@@ -122,24 +146,47 @@ int CGL2Dprimitives::init_OpenGL()
       fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
       exit(EXIT_FAILURE);
     }
+  if (!GLEW_VERSION_2_0)
+    {
+      printf("Error: your graphic card does not support OpenGL 2.0.\n");
+      exit(EXIT_FAILURE);
+    }
+#endif
+
   glClear(GL_COLOR_BUFFER_BIT);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  // Change projection to the SDL coordinate system
   glDisable(GL_CULL_FACE);
   glDisable(GL_DEPTH_TEST);
+#ifndef __ANDROID__
   glDisable(GL_FOG);
+#endif
   enable_blending(false);
-  //glSampleCoverage(0.5, GL_FALSE);
+  //create_work_texture();
+  // Compile the shaders
+  if (!CreateProgram(&m_sh))
+    {
+      printf("Error: OpenGL shader creation failed.\n");
+      exit(EXIT_FAILURE);
+    }
+  // Buffers used in the shaders
+  glGenBuffers(1, &m_vbo_vertexbuffer);
+  glBindBuffer(GL_ARRAY_BUFFER, m_vbo_vertexbuffer);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(m_vertex_buffer_data), m_vertex_buffer_data, GL_DYNAMIC_DRAW);
+  // Vertex indexes
+  glGenBuffers(1, &m_ibo_triangles);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ibo_triangles);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(m_triangles), m_triangles, GL_STATIC_DRAW);
+  //
   color2openGl(IDENTCOLOR);
   reset_viewport();
   RenderPresent();
-  //create_work_texture();
   error_handling(__LINE__);
   return false;
 }
 
 void CGL2Dprimitives::Clear()
 {
+  set_clear_color(m_clear_color);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
@@ -177,17 +224,20 @@ bool CGL2Dprimitives::error_handling(int line)
       case GL_INVALID_OPERATION:
 	printf("The specified operation is not allowed in the current state. The offending command is ignored and has no other side effect than to set the error flag.\n");
 	break;
+#ifndef __ANDROID__
       case GL_INVALID_FRAMEBUFFER_OPERATION:
 	printf("The framebuffer object is not complete. The offending command is ignored and has no other side effect than to set the error flag.\n");
 	break;
-      case GL_OUT_OF_MEMORY:
-	printf("There is not enough memory left to execute the command. The state of the GL is undefined, except for the state of the error flags, after this error is recorded.\n");
+      case GL_STACK_OVERFLOW:
+	printf("OpenGL stack overflow\n");
 	break;
       case GL_STACK_UNDERFLOW:
 	printf("An attempt has been made to perform an operation that would cause an internal stack to underflow.\n");
 	break;
-      case GL_STACK_OVERFLOW:
-	printf("OpenGL stack overflow\n");
+#endif
+      case GL_OUT_OF_MEMORY:
+	printf("There is not enough memory left to execute the command. The state of the GL is undefined, except for the state of the error flags, after this error is recorded.\n");
+	break;
       default:
 	printf("OpenGL unknown error\n");
 	break;
@@ -198,16 +248,38 @@ bool CGL2Dprimitives::error_handling(int line)
   return false;
 }
 
+void CGL2Dprimitives::push_projection_matrix()
+{
+  memcpy(&m_projection_matrix_sav[m_stack_index * 16], m_projection_matrix, sizeof(m_projection_matrix));
+  m_stack_index++;
+}
+
+void CGL2Dprimitives::pop_projection_matrix()
+{
+  m_stack_index--;
+  m_stack_index = m_stack_index < 0? 0 : m_stack_index;
+  memcpy(m_projection_matrix, &m_projection_matrix_sav[m_stack_index * 16], sizeof(m_projection_matrix));
+}
+
+void CGL2Dprimitives::my_ortho(float left, float right, float bottom, float top, float nearval, float farval)
+{
+  unsigned int  i;
+  float        *pf;
+
+  // glOrtho
+  glm::mat4 projectionm = glm::ortho(left, right, bottom, top, nearval, farval);
+  pf = glm::value_ptr(projectionm);
+  for (i = 0; i < sizeof(m_projection_matrix) / sizeof(float); i++)
+    {
+      m_projection_matrix[i] = pf[i];
+    }
+}
+
 // Everything outside the window will not be rendered
 void CGL2Dprimitives::set_viewport(t_coord pos, t_coord dim, t_fcoord orthodim)
 {
-  error_handling(__LINE__);
   glViewport(pos.x, m_h - (pos.y + dim.y), dim.x, dim.y);
-  glMatrixMode(GL_PROJECTION);
-  glLoadIdentity();
-  glOrtho(0, orthodim.x, orthodim.y, 0, -1., 1.);
-  glMatrixMode(GL_MODELVIEW);
-  glLoadIdentity();
+  my_ortho(0, orthodim.x, orthodim.y, 0, -1., 1.);
   if (error_handling(__LINE__))
     {
       printf("Set ViewPort failed.\n");
@@ -217,13 +289,8 @@ void CGL2Dprimitives::set_viewport(t_coord pos, t_coord dim, t_fcoord orthodim)
 
 void CGL2Dprimitives::reset_viewport()
 {
-  error_handling(__LINE__);
   glViewport(0, 0, m_w, m_h);
-  glMatrixMode(GL_PROJECTION);
-  glLoadIdentity();
-  glOrtho(0, m_w, m_h, 0, -1., 1.); 
-  glMatrixMode(GL_MODELVIEW);
-  glLoadIdentity();
+  my_ortho(0, m_w, m_h, 0, -1., 1.);
   if (error_handling(__LINE__))
     {
       printf("Set ViewPort failed.\n");
@@ -348,49 +415,181 @@ void CGL2Dprimitives::add_picture(Cpicture* pp)
   m_picturelist.push_front(pp);
 }
 
-void CGL2Dprimitives::texture_quad(t_fcoord pos, t_fcoord dim, GLuint tidentifier, t_fcoord *subdim, t_fcoord *suboffset, bool blending)
+void CGL2Dprimitives::texture_quad(t_fcoord *points, GLuint tidentifier, t_fcoord *ptcoord, bool blending)
 {
-  t_fcoord tsub, tsubpos;
+  int      i;
+  t_fcoord coord[4];
 
-  if (subdim == NULL)
+  // Texture coordinates, pos
+  if (ptcoord == NULL)
     {
-      tsub.x = tsub.y = 1.;
-      tsub.z = 0;
-    }
-  else
-    {
-      tsub.x = subdim->x;
-      tsub.y = subdim->y;
-      tsub.z = subdim->z;
-    }
-  if (suboffset == NULL)
-    {
-      tsubpos.x = tsubpos.y = tsubpos.z = 0;
-    }
-  else
-    {
-      tsubpos = *suboffset;
+      ptcoord = coord;
+      ptcoord[0].x = 0;
+      ptcoord[0].y = 0;
+      ptcoord[0].z = 0;
+      //
+      ptcoord[1].x = 0;
+      ptcoord[1].y = 1;
+      ptcoord[1].z = 0;
+      //
+      ptcoord[2].x = 1;
+      ptcoord[2].y = 1;
+      ptcoord[2].z = 0;
+      //
+      ptcoord[3].x = 1;
+      ptcoord[3].y = 0;
+      ptcoord[3].z = 0;
     }
   enable_blending(blending);
-  glEnable(GL_TEXTURE_2D);
+  // Texture shaders
+//#define USECOLOR
+#ifdef USECOLOR
+  glUseProgram(m_sh.program_color);
+
+  color2openGl(0xFFEDADDE);
+  glUniformMatrix4fv(m_sh.uniform_mvp, 1, GL_FALSE, m_projection_matrix);
+  glUniform4fv(m_sh.uniform_color, 1, m_color);
+
+  //
+  // Copy the 4 points
+  for (i = 0; i < 4; i++)
+    {
+      m_vertex_buffer_data[i * 3 + 0] = points[i].x;
+      m_vertex_buffer_data[i * 3 + 1] = points[i].y;
+      m_vertex_buffer_data[i * 3 + 2] = 0;//points[i].z;
+    }
+  //
+  // vertex and texture coorinates
+  glEnableVertexAttribArray(m_sh.attribute_vertpos);
+  glBindBuffer(GL_ARRAY_BUFFER, m_vbo_vertexbuffer);
+  glBufferData(GL_ARRAY_BUFFER, 4 * 3 * sizeof(GLfloat), m_vertex_buffer_data, GL_STATIC_DRAW);
+  //  
+  glVertexAttribPointer(m_sh.attribute_vertpos, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+  // Set the triangle indexes
+  m_triangles[0] = 0;
+  m_triangles[1] = 1;
+  m_triangles[2] = 2;
+  m_triangles[3] = 0;
+  m_triangles[4] = 2;
+  m_triangles[5] = 3;
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ibo_triangles);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, 6 * sizeof(GLushort), m_triangles, GL_STATIC_DRAW);
+  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+
+  glDisableVertexAttribArray(m_sh.attribute_vertpos);
+#else
+  glUseProgram(m_sh.program_texture);
+  glActiveTexture(GL_TEXTURE0); // Use texture unit 0
+  glUniform1i(m_sh.uniform_text_unit, /*GL_TEXTURE*/0);
   glBindTexture(GL_TEXTURE_2D, tidentifier);
-  glBegin(GL_QUADS);
-  glTexCoord2f(tsubpos.x, tsubpos.y);
-  glVertex2f(pos.x, pos.y);
-  glTexCoord2f(tsubpos.x, tsub.y);
-  glVertex2f(pos.x, pos.y + dim.y);
-  glTexCoord2f(tsub.x, tsub.y);
-  glVertex2f(pos.x + dim.x, pos.y + dim.y);
-  glTexCoord2f(tsub.x, tsubpos.y);
-  glVertex2f(pos.x + dim.x, pos.y);
-  glEnd();
-  glDisable(GL_TEXTURE_2D);
-  error_handling(__LINE__);
+  //
+  //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  //
+  // Projection matrix 
+  // Set the matrice uniform for the vertex shader
+  glUniformMatrix4fv(m_sh.uniform_text_mvp, 1, GL_FALSE, m_projection_matrix);
+  //
+  // Copy the 4 points
+  for (i = 0; i < 4; i++)
+    {
+      m_vertex_buffer_data[i * 5 + 0] = points[i].x;
+      m_vertex_buffer_data[i * 5 + 1] = points[i].y;
+      m_vertex_buffer_data[i * 5 + 2] = points[i].z;
+      m_vertex_buffer_data[i * 5 + 3] = ptcoord[i].x;
+      m_vertex_buffer_data[i * 5 + 4] = ptcoord[i].y;
+    }
+  //
+  // vertex and texture coorinates
+  glEnableVertexAttribArray(m_sh.attribute_text_vertpos);
+  glEnableVertexAttribArray(m_sh.attribute_text_coord0);
+  glBindBuffer(GL_ARRAY_BUFFER, m_vbo_vertexbuffer);
+  glBufferData(GL_ARRAY_BUFFER, 4 * 5 * sizeof(GLfloat), m_vertex_buffer_data, GL_STATIC_DRAW);
+  //  
+  glVertexAttribPointer(m_sh.attribute_text_vertpos, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)0);
+  glVertexAttribPointer(m_sh.attribute_text_coord0,  2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
+
+  // Set the triangle indexes
+  m_triangles[0] = 0;
+  m_triangles[1] = 1;
+  m_triangles[2] = 2;
+  m_triangles[3] = 0;
+  m_triangles[4] = 2;
+  m_triangles[5] = 3;  
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ibo_triangles);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, 6 * sizeof(GLushort), m_triangles, GL_STATIC_DRAW);
+  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+  //
+  glDisableVertexAttribArray(m_sh.attribute_text_vertpos);
+  glDisableVertexAttribArray(m_sh.attribute_text_coord0);
+  glBindTexture(GL_TEXTURE_2D, 0);
+#endif
+}
+
+void CGL2Dprimitives::texture_rectangle(t_fcoord pos, t_fcoord dim, GLuint tidentifier, t_fcoord *ptcoord, bool blending)
+{
+  t_fcoord vcoord[4];
+
+  //
+  // Create the 4 points around the box
+  vcoord[0].x = pos.x;
+  vcoord[0].y = pos.y;
+  vcoord[0].z = 0;
+  //
+  vcoord[1].x = pos.x;
+  vcoord[1].y = pos.y + dim.y;
+  vcoord[1].z = 0;
+  //
+  vcoord[2].x = pos.x + dim.x;
+  vcoord[2].y = pos.y + dim.y;
+  vcoord[2].z = 0;
+  //
+  vcoord[3].x = pos.x + dim.x;
+  vcoord[3].y = pos.y;
+  vcoord[3].z = 0;
+  texture_quad(vcoord, tidentifier, ptcoord, blending);
+}
+
+void CGL2Dprimitives::draw_key(string texturename, t_fcoord pos, t_fcoord dim, bool blending)
+{
+  Cpicture *pp;
+  t_fcoord  quad_texture_coord[4];
+
+  pp = get_picture(texturename);
+  if (pp != NULL)
+    {
+#ifndef __ANDROID__
+      glEnable(GL_MULTISAMPLE);
+#endif
+      quad_texture_coord[0].x = 1;
+      quad_texture_coord[0].y = 0;
+      quad_texture_coord[0].z = 0;
+      //
+      quad_texture_coord[1].x = 0;
+      quad_texture_coord[1].y = 0;
+      quad_texture_coord[1].z = 0;
+      //
+      quad_texture_coord[2].x = 0;
+      quad_texture_coord[2].y = 1;
+      quad_texture_coord[2].z = 0;
+      //
+      quad_texture_coord[3].x = 1;
+      quad_texture_coord[3].y = 1;
+      quad_texture_coord[3].z = 0;
+      //
+      texture_rectangle(pos, dim, pp->m_OpenGL_texture_id, quad_texture_coord, blending);
+#ifndef __ANDROID__
+      glDisable(GL_MULTISAMPLE);
+#endif
+      error_handling(__LINE__);
+    }
 }
 
 void CGL2Dprimitives::draw_texture(std::string name, t_fcoord pos, t_fcoord dim, bool filtering, bool blend, t_fcoord *psubdim, t_fcoord *poffset)
 {
   Cpicture *pp;
+  t_fcoord  quad_texture_coord[4];
+  t_fcoord  subdim, offset;
 
   pp = get_picture(name);
   if (pp != NULL)
@@ -398,15 +597,85 @@ void CGL2Dprimitives::draw_texture(std::string name, t_fcoord pos, t_fcoord dim,
       // Translate to 0-1 values
       if (psubdim != NULL)
 	{
-	  psubdim->x = psubdim->x / (float)pp->m_dim.x;
-	  psubdim->y = psubdim->y / (float)pp->m_dim.y;
+	  subdim.x = psubdim->x / (float)pp->m_dim.x;
+	  subdim.y = psubdim->y / (float)pp->m_dim.y;
+	}
+      else
+	subdim.x = subdim.y = 1.;
+      if (poffset != NULL)
+	{
+	  offset.x = poffset->x / (float)pp->m_dim.x;
+	  offset.y = poffset->y / (float)pp->m_dim.y;
+	}
+      else
+	offset.x = offset.y = 0;
+      //
+      quad_texture_coord[0].x = offset.x;
+      quad_texture_coord[0].y = offset.y;
+      quad_texture_coord[0].z = 0;
+      //
+      quad_texture_coord[1].x = offset.x;
+      quad_texture_coord[1].y = subdim.y;
+      quad_texture_coord[1].z = 0;
+      //
+      quad_texture_coord[2].x = subdim.x;
+      quad_texture_coord[2].y = subdim.y;
+      quad_texture_coord[2].z = 0;
+      //
+      quad_texture_coord[3].x = subdim.x;
+      quad_texture_coord[3].y = offset.y;
+      quad_texture_coord[3].z = 0;
+      //
+      texture_rectangle(pos, dim, pp->m_OpenGL_texture_id, quad_texture_coord, blend);
+    }
+  else
+    printf("Error: \"%s\" texture not found.\n", name.c_str());
+}
+
+void CGL2Dprimitives::draw_texture_quad(std::string name, t_fcoord *points, bool filtering, bool blend, t_fcoord *psubdim, t_fcoord *poffset)
+{
+  Cpicture *pp;
+  t_fcoord  quad_texture_coord[4];
+  t_fcoord  subdim, offset;
+
+  pp = get_picture(name);
+  if (pp != NULL)
+    {
+      // Translate to 0-1 values
+      if (psubdim != NULL)
+	{
+	  subdim.x = psubdim->x / (float)pp->m_dim.x;
+	  subdim.y = psubdim->y / (float)pp->m_dim.y;
+	}
+      else
+	{
+	  subdim.x = subdim.y = 1.;
 	}
       if (poffset != NULL)
 	{
-	  poffset->x = poffset->x / (float)pp->m_dim.x;
-	  poffset->y = poffset->y / (float)pp->m_dim.y;
+	  offset.x = poffset->x / (float)pp->m_dim.x;
+	  offset.y = poffset->y / (float)pp->m_dim.y;
 	}
-      texture_quad(pos, dim, pp->m_OpenGL_texture_id, psubdim, poffset, blend);
+      else
+	offset.x = offset.y = 0;
+      //
+      quad_texture_coord[0].x = offset.x;
+      quad_texture_coord[0].y = offset.y;
+      quad_texture_coord[0].z = 0;
+      //
+      quad_texture_coord[1].x = offset.x;
+      quad_texture_coord[1].y = subdim.y;
+      quad_texture_coord[1].z = 0;
+      //
+      quad_texture_coord[2].x = subdim.x;
+      quad_texture_coord[2].y = subdim.y;
+      quad_texture_coord[2].z = 0;
+      //
+      quad_texture_coord[3].x = subdim.x;
+      quad_texture_coord[3].y = offset.y;
+      quad_texture_coord[3].z = 0;
+      //
+      texture_quad(points, pp->m_OpenGL_texture_id, quad_texture_coord, blend);
     }
   else
     printf("Error: \"%s\" texture not found.\n", name.c_str());
@@ -440,9 +709,27 @@ void CGL2Dprimitives::update_texture_texels(std::string name, int width, int hei
 void CGL2Dprimitives::surface_to_screen2(t_fcoord pos, t_fcoord dim, int width, int height, void *pmap, bool blending)
 {
   t_fcoord subdim;
+  t_fcoord  quad_texture_coord[4];
 
   surface_to_texture(m_transfert_texture, width, height, pmap, &subdim);
-  texture_quad(pos, dim, m_transfert_texture->m_OpenGL_texture_id, &subdim, NULL, blending);
+  //
+  quad_texture_coord[0].x = 0;
+  quad_texture_coord[0].y = 0;
+  quad_texture_coord[0].z = 0;
+  //
+  quad_texture_coord[1].x = 0;
+  quad_texture_coord[1].y = subdim.y;
+  quad_texture_coord[1].z = 0;
+  //
+  quad_texture_coord[2].x = subdim.x;
+  quad_texture_coord[2].y = subdim.y;
+  quad_texture_coord[2].z = 0;
+  //
+  quad_texture_coord[3].x = subdim.x;
+  quad_texture_coord[3].y = 0;
+  quad_texture_coord[3].z = 0;
+  //
+  texture_rectangle(pos, dim, m_transfert_texture->m_OpenGL_texture_id, quad_texture_coord, blending);
 }
 
 void CGL2Dprimitives::surface_to_screen2(t_fcoord pos, t_fcoord dim, SDL_Surface *surface, bool blending)
@@ -507,21 +794,42 @@ void CGL2Dprimitives::draw_spectrum_texture(Cgfxarea *pw, int cut)
 {
   t_fcoord  pos, dim;
   double    fcut;
-  t_fcoord  tsub;
+  //t_fcoord  tsub;
+  t_fcoord  quad_texture_coord[4];
 
+  //return;
   pw->get_posf(&pos);
   pw->get_dimf(&dim);
   fcut = (double)cut / (double)m_spectrum_texture->m_dim.x;
+  push_projection_matrix();
   //printf("Cut == %f\n", fcut);
-  glMatrixMode(GL_TEXTURE);
-  glPushMatrix();
-  glTranslated(fcut, 0, 0);
-  tsub.x = 1;
-  tsub.y = 1;
-  tsub.z = 0;
-  texture_quad(pos, dim, m_spectrum_texture->m_OpenGL_texture_id, &tsub);
-  glPopMatrix();
-  glMatrixMode(GL_MODELVIEW);
+  //glMatrixMode(GL_TEXTURE);
+  //glTranslated(fcut, 0, 0);
+  //tsub.x = 1;
+  //tsub.y = 1;
+  //tsub.z = 0;
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+
+  // Translate for cut to be the left corner
+  //
+  quad_texture_coord[0].x = fcut;
+  quad_texture_coord[0].y = 0;
+  quad_texture_coord[0].z = 0;
+  //
+  quad_texture_coord[1].x = fcut;
+  quad_texture_coord[1].y = 1.;
+  quad_texture_coord[1].z = 0;
+  //
+  quad_texture_coord[2].x = 1. + fcut;
+  quad_texture_coord[2].y = 1.;
+  quad_texture_coord[2].z = 0;
+  //
+  quad_texture_coord[3].x = 1. + fcut;
+  quad_texture_coord[3].y = 0;
+  quad_texture_coord[3].z = 0;
+  //
+  texture_rectangle(pos, dim, m_spectrum_texture->m_OpenGL_texture_id, quad_texture_coord);
+  pop_projection_matrix();
   error_handling(__LINE__);
 }
 
@@ -597,6 +905,8 @@ void CGL2Dprimitives::print(char *str, TTF_Font *pfont, t_fcoord pos, t_fcoord d
   SDL_FreeSurface(img);
 }
 
+#define I256TOFLOAT10(C) (((float)C) / 255.)
+
 void CGL2Dprimitives::color2openGl(int color)
 {
   unsigned char R, G, B, A;
@@ -605,8 +915,10 @@ void CGL2Dprimitives::color2openGl(int color)
   G = (color >> 8) & 0xFF;
   B = (color >> 16) & 0xFF;
   A = (color >> 24) & 0xFF;
-  glColor4ub(R, G, B, A);
-  error_handling(__LINE__);
+  m_color[0] = I256TOFLOAT10(R);
+  m_color[1] = I256TOFLOAT10(G);
+  m_color[2] = I256TOFLOAT10(B);
+  m_color[3] = I256TOFLOAT10(A);
 }
 
 void CGL2Dprimitives::hline(float x, float y, float width, int color)
@@ -625,41 +937,88 @@ void CGL2Dprimitives::vline(float x, float y, float height, int color)
   //line(x, y, x , y + 10/*height*/, color);
 }
 
-// Bug here, called only twice FIXME replace with a polygon
+// called only twice in Scoreview
 void CGL2Dprimitives::line(float xsta, float ysta, float xsto, float ysto, int color)
-{
-  enable_blending(false);
-  color2openGl(color);
-//  glLineWidth()
-  glBegin(GL_LINES);
-  glVertex2f(xsta, ysta);
-  glVertex2f(xsto, ysto);
-  error_handling(__LINE__);
-  glEnd();
-  color2openGl(IDENTCOLOR);
-  error_handling(__LINE__);
-}
-
-// Convex polygons only
-void CGL2Dprimitives::polygon(t_fcoord *ppointarr, int points, int color, bool bantialiased)
 {
   int i;
 
+  // FIXME replace with a polygon?
+
+  enable_blending(false);
+  color2openGl(color);
+  // Shader program selection
+  glUseProgram(m_sh.program_color);
+  // Set the matrix uniform for the vertex shader
+  glUniformMatrix4fv(m_sh.uniform_mvp, 1, GL_FALSE, m_projection_matrix);
+  // Set the color uniform for the fragment shader
+  glUniform4fv(m_sh.uniform_color, 1, m_color);
+  //
+  // Enable the array
+  glEnableVertexAttribArray(m_sh.attribute_vertpos);
+  // Copy the 2 points
+  i = 0;
+  m_vertex_buffer_data[i++] = xsta;
+  m_vertex_buffer_data[i++] = ysta;
+  m_vertex_buffer_data[i++] = 0;
+  m_vertex_buffer_data[i++] = xsto;
+  m_vertex_buffer_data[i++] = ysto;
+  m_vertex_buffer_data[i++] = 0;
+  // Set the position attribute
+  glBindBuffer(GL_ARRAY_BUFFER, m_vbo_vertexbuffer);
+  glBufferData(GL_ARRAY_BUFFER, i * sizeof(GLfloat), m_vertex_buffer_data, GL_STATIC_DRAW);
+  glVertexAttribPointer(m_sh.attribute_vertpos, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+  glDrawArrays(GL_LINES, 0, i / 2); // Starting from vertex 0; i vertices
+  glDisableVertexAttribArray(m_sh.attribute_vertpos);
+  //
+  color2openGl(IDENTCOLOR);
+  //error_handling(__LINE__);
+}
+
+// Set of triangles only
+void CGL2Dprimitives::polygon(t_fcoord *ppointarr, int points, int color, bool bantialiased)
+{
+  int i, p;
+
   enable_blending(true);
   color2openGl(color);
+#ifndef __ANDROID__
   if (bantialiased)
     glEnable(GL_MULTISAMPLE);
-  glBegin(GL_POLYGON);
-  for (i = 0; i < points; i++)
+#endif
+  //
+  glUseProgram(m_sh.program_color);
+  //
+  // Set the matrice uniform for the vertex shader
+  glUniformMatrix4fv(m_sh.uniform_mvp, 1, GL_FALSE, m_projection_matrix);
+  // Set the color uniform for the fragment shader
+  glUniform4fv(m_sh.uniform_color, 1, m_color);
+  //
+  i = p = 0;
+  while (i < MAX_GL_VERTEX_ARRAY_SIZE && p < points)
     {
-      glVertex2f(ppointarr[i].x, ppointarr[i].y);
+      // Copy the point
+      m_vertex_buffer_data[i++] = ppointarr[p].x;
+      m_vertex_buffer_data[i++] = ppointarr[p].y;
+      m_vertex_buffer_data[i++] = 0;
+      p++;
     }
-  glEnd();
-  if (bantialiased)
-    glDisable(GL_MULTISAMPLE);
+  //
+  // Enable the array
+  glEnableVertexAttribArray(m_sh.attribute_vertpos);
+  glBindBuffer(GL_ARRAY_BUFFER, m_vbo_vertexbuffer);
+  glBufferData(GL_ARRAY_BUFFER, i * sizeof(GLfloat), m_vertex_buffer_data, GL_STATIC_DRAW);
+  // Set the position attribute
+  glVertexAttribPointer(m_sh.attribute_vertpos, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+  glDrawArrays(GL_TRIANGLES, 0, i / 3); // Starting from vertex 0; i vertices
+  // Disable the array
+  glDisableVertexAttribArray(m_sh.attribute_vertpos);
+  //
   color2openGl(IDENTCOLOR);
   enable_blending(false);
-  error_handling(__LINE__);
+#ifndef __ANDROID__
+  if (bantialiased)
+    glDisable(GL_MULTISAMPLE);
+#endif
 }
 
 void CGL2Dprimitives::triangle_mesh2D(t_fcoord pos, t_fcoord dim, CMesh *pmesh, int color, bool bantialiased)
@@ -669,23 +1028,48 @@ void CGL2Dprimitives::triangle_mesh2D(t_fcoord pos, t_fcoord dim, CMesh *pmesh, 
   t_fcoord    meshdim;
   float       xratio, yratio;
   bool        bret;
+  int         i;
+  const int   components = 3;
+
+  // FIXME-
 
   meshdim = pmesh->get_size();
   xratio = dim.x / meshdim.x;  // Scaling from object dimensions to drawing box dimensions
   yratio = dim.y / meshdim.y;
-  ptriangle = pmesh->get_first_triangle();
   enable_blending(true);
   color2openGl(color);
-  // Project inside the box
-  glMatrixMode(GL_PROJECTION);
-  glPushMatrix();
-  glTranslatef(pos.x, pos.y, 0);
-  glScaled(xratio, -yratio, 1.);
-  glMatrixMode(GL_MODELVIEW);
-  glLoadIdentity();
+
+//   // Project the object inside the box
+//   glMatrixMode(GL_PROJECTION);
+//   glPushMatrix();
+//   glTranslatef(pos.x, pos.y, 0);
+//   glScaled(xratio, -yratio, 1.);
+//   glMatrixMode(GL_MODELVIEW);
+//   glLoadIdentity();
+
+  // Shader program selection
+  glUseProgram(m_sh.program_color);
+  //
+  // Project in the current window dimension
+  push_projection_matrix();
+  glm::mat4 transform = glm::mat4(1.0f);
+  memcpy(glm::value_ptr(transform), m_projection_matrix, sizeof(m_projection_matrix));
+  transform = glm::translate(transform, glm::vec3(pos.x, pos.y, 0.0));
+  transform = glm::scale(transform, glm::vec3(xratio, -yratio, 1.));
+  memcpy(m_projection_matrix, glm::value_ptr(transform), sizeof(m_projection_matrix));
+  //
+  // Set the matrice uniform for the vertex shader
+  glUniformMatrix4fv(m_sh.uniform_mvp, 1, GL_FALSE, m_projection_matrix);
+  // Set the color uniform for the fragment shader
+  glUniform4fv(m_sh.uniform_color, 1, m_color);
+  //
+#ifndef __ANDROID__
   glEnable(GL_MULTISAMPLE);
-  glBegin(GL_TRIANGLES);
-  while (ptriangle != NULL)
+#endif
+  //
+  ptriangle = pmesh->get_first_triangle();
+  i = 0;
+  while (ptriangle != NULL && i < MAX_GL_VERTEX_ARRAY_SIZE)
     {
       bret = pmesh->get_point(ptriangle->v1, &p1);
       bret = bret && pmesh->get_point(ptriangle->v2, &p2);
@@ -695,40 +1079,63 @@ void CGL2Dprimitives::triangle_mesh2D(t_fcoord pos, t_fcoord dim, CMesh *pmesh, 
 	  printf("Error in 2D primitives: get_point failed\n.");
 	  return ;
 	}
-      glVertex2f(p1.x, p1.y);
-      glVertex2f(p2.x, p2.y);
-      glVertex2f(p3.x, p3.y);
-//       glVertex2f(pos.x + p1.x * xratio, pos.y + p1.y * yratio);
-//       glVertex2f(pos.x + p2.x * xratio, pos.y + p2.y * yratio);
-//       glVertex2f(pos.x + p3.x * xratio, pos.y + p3.y * yratio);
+      // Copy the points
+      m_vertex_buffer_data[i++] = p1.x;
+      m_vertex_buffer_data[i++] = p1.y;
+      m_vertex_buffer_data[i++] = 0;
+      m_vertex_buffer_data[i++] = p2.x;
+      m_vertex_buffer_data[i++] = p2.y;
+      m_vertex_buffer_data[i++] = 0;
+      m_vertex_buffer_data[i++] = p3.x;
+      m_vertex_buffer_data[i++] = p3.y;
+      m_vertex_buffer_data[i++] = 0;
+      //
       ptriangle = pmesh->get_next_triangle();
     }
-  glEnd();
-  glDisable(GL_MULTISAMPLE);
-  // Return to the current projection
-  glMatrixMode(GL_PROJECTION);
-  glPopMatrix();
-  glMatrixMode(GL_MODELVIEW);
-  glLoadIdentity();
+  // Enable the array
+  glEnableVertexAttribArray(m_sh.attribute_vertpos);
+  glBindBuffer(GL_ARRAY_BUFFER, m_vbo_vertexbuffer);
+  glBufferData(GL_ARRAY_BUFFER, i * sizeof(GLfloat), m_vertex_buffer_data, GL_STATIC_DRAW);
+  // Set the position attribute
+  glVertexAttribPointer(m_sh.attribute_vertpos, components, GL_FLOAT, GL_FALSE, 0, (void*)0);
+  glDrawArrays(GL_TRIANGLES, 0, i / 3); // Starting from vertex 0; i vertices
+  // Disable the array
+  glDisableVertexAttribArray(m_sh.attribute_vertpos);
   //
-  color2openGl(IDENTCOLOR);
-  error_handling(__LINE__);
+#ifndef __ANDROID__
+  glDisable(GL_MULTISAMPLE);
+#endif
+  // Return to the current projection
+  pop_projection_matrix();
+  //
+  //color2openGl(IDENTCOLOR);
   enable_blending(false);
+  error_handling(__LINE__);
 }
 
 void CGL2Dprimitives::disc(t_fcoord center, float radius, int color, bool bantialiased)
 {
   const int cnpts = 32;
   t_fcoord  points[cnpts];
-  int       i;
+  int       i, p;
   float     angle;
+  const int cntripts = 3 * (cnpts - 2);
+  t_fcoord  points_tri[cntripts];
 
   for (i = 0, angle = (2. * M_PI) / (float)cnpts; i < cnpts; i++)
     {      
       points[i].x = center.x + radius * cos(2. * M_PI - angle * (float)i);
       points[i].y = center.y + radius * sin(2. * M_PI - angle * (float)i);
+      points[i].z = 0;
     }
-  polygon(points, cnpts, color, bantialiased);
+  // Create triangles
+  for (i = 0, p = 1; i < cntripts; i += 3, p++)
+    {
+      points_tri[i] = points[0];
+      points_tri[i + 1] = points[p + 1];
+      points_tri[i + 2] = points[p + 0];
+    }
+  polygon(points_tri, cntripts, color, bantialiased);
 }
 
 void CGL2Dprimitives::rectangle(t_fcoord pos, t_fcoord dim, int color, bool bantialiased)
@@ -765,14 +1172,21 @@ void CGL2Dprimitives::box(float xstart, float ystart, float xstop, float ystop, 
 
 void CGL2Dprimitives::box(t_fcoord pos, t_fcoord dim, int color, bool bantialiased)
 {
-  const int cnpts = 4;
+  const int cnpts = 6;
   t_fcoord  points[cnpts];
+  t_fcoord  p1, p2, p3, p4;
 
-  points[0] = points[1] = points[2] = points[3] = pos;
-  points[1].x += dim.x;
-  points[2].x += dim.x;
-  points[2].y += dim.y;
-  points[3].y += dim.y;
+  p1 = p2 = p3 = p4 = pos;
+  p2.x += dim.x;
+  p3.x += dim.x;
+  p3.y += dim.y;
+  p4.y += dim.y;
+  points[0] = p1;
+  points[1] = p3;
+  points[2] = p2;
+  points[3] = p1;
+  points[4] = p4;
+  points[5] = p3;
   polygon(points, cnpts, color, bantialiased);
 }
 
@@ -857,8 +1271,8 @@ void CGL2Dprimitives::rounded_box(t_fcoord pos, t_fcoord dim, int color, bool ba
   indexes[0] = 1;
   for (i = 2; i < nbpoints; i++)
     {
-      indexes[3] = i;
-      indexes[6] = (i + 1) < nbpoints? i + 1 : 2;
+      indexes[3] = (i + 1) < nbpoints? i + 1 : 2;
+      indexes[6] = i;
       m_reallocMesh.add_face(indexes, 9);
     }
   // Draw it
@@ -877,6 +1291,7 @@ void CGL2Dprimitives::circle(t_fcoord center, float radius, float thickness, int
   angle = (2. * M_PI) / (float)cnpts;
   pivot.x = radius;
   pivot.y = -radius;  
+  point.z = pivot.z = 0;
   for (i = 0, v = 1; i < cnpts; i++)
     {
       point.x = pivot.x + radius * cos(2. * M_PI - angle * (float)i);
@@ -916,30 +1331,24 @@ void CGL2Dprimitives::moulagaufre(string texturename, t_fcoord pos, t_fcoord dim
       //dim.x = pp->m_dim.x;
       //dim.y = pp->m_dim.y;
       //
-      glMatrixMode(GL_PROJECTION);
-      glPushMatrix();
-      glLoadIdentity();
-
-      glOrtho(0, m_w, m_h, 0, -1., 1.);
-      glTranslatef(pos.x, pos.y, 0);
+      push_projection_matrix();
+      glm::mat4 transform = glm::ortho(0.f, (float)m_w, (float)m_h, 0.f, -1.f, 1.f);
+      transform = glm::translate(transform, glm::vec3(pos.x, pos.y, 0.0));
+      // Rotate from the center of the texture
       pos.x = pos.y = 0;
       angle = angle * 180. / M_PI;
-      glTranslatef(dim.x / 2, dim.x / 2, 0);
-      glRotatef(angle, 0, 0, 1);
-      glTranslatef(-dim.x / 2, -dim.x / 2, 0);
+      transform = glm::rotate(transform, angle, glm::vec3(dim.x / 2, dim.x / 2, 1.));
+      memcpy(m_projection_matrix, glm::value_ptr(transform), sizeof(m_projection_matrix));
 
-      glMatrixMode(GL_MODELVIEW);
-      glLoadIdentity();
-
+#ifndef __ANDROID__
       glEnable(GL_MULTISAMPLE);
-      texture_quad(pos, dim, pp->m_OpenGL_texture_id, NULL, NULL, true);
+#endif
+      texture_rectangle(pos, dim, pp->m_OpenGL_texture_id, NULL, true);
+#ifndef __ANDROID__
       glDisable(GL_MULTISAMPLE);
-
+#endif
       // Return to the current projection
-      glMatrixMode(GL_PROJECTION);
-      glPopMatrix();
-      glMatrixMode(GL_MODELVIEW);
-      glLoadIdentity();
+      pop_projection_matrix();
     }
 }
 
@@ -947,56 +1356,23 @@ void CGL2Dprimitives::moulagaufre_box(t_fcoord pos, t_fcoord dim, float angle, i
 {
   bool      bantialiased = true;
 
-  glMatrixMode(GL_PROJECTION);
-  glPushMatrix();
-  glLoadIdentity();
-  
-  glOrtho(0, m_w, m_h, 0, -1., 1.);
-  glTranslatef(pos.x, pos.y, 0);
+  push_projection_matrix();
+  glm::mat4 transform = glm::ortho(0.f, (float)m_w, (float)m_h, 0.f, -1.f, 1.f);
+  transform = glm::translate(transform, glm::vec3(pos.x, pos.y, 0.0));
+  // Rotate from the center of the texture
   pos.x = pos.y = 0;
   angle = angle * 180. / M_PI;
-  glTranslatef(dim.x / 2, dim.x / 2, 0);
-  glRotatef(angle, 0, 0, 1);
-  glTranslatef(-dim.x / 2, -dim.x / 2, 0);
+  transform = glm::rotate(transform, angle, glm::vec3(dim.x / 2, dim.x / 2, 1.));
+  memcpy(m_projection_matrix, glm::value_ptr(transform), sizeof(m_projection_matrix));
   
-  glMatrixMode(GL_MODELVIEW);
-  glLoadIdentity();
-  
+#ifndef __ANDROID__
   glEnable(GL_MULTISAMPLE);
+#endif
   rounded_box(pos, dim, color, bantialiased, radius);
+#ifndef __ANDROID__
   glDisable(GL_MULTISAMPLE);
-  
+#endif
   // Return to the current projection
-  glMatrixMode(GL_PROJECTION);
-  glPopMatrix();
-  glMatrixMode(GL_MODELVIEW);
-  glLoadIdentity();
-}
-
-void CGL2Dprimitives::draw_key(string texturename, t_fcoord pos, t_fcoord dim, bool blending)
-{
-  Cpicture *pp;
-
-  pp = get_picture(texturename);
-  if (pp != NULL)
-    {
-      glEnable(GL_MULTISAMPLE);
-      enable_blending(blending);
-      glEnable(GL_TEXTURE_2D);
-      glBindTexture(GL_TEXTURE_2D, pp->m_OpenGL_texture_id);
-      glBegin(GL_QUADS);
-      glTexCoord2f(1, 0);
-      glVertex2f(pos.x, pos.y);
-      glTexCoord2f(0, 0);
-      glVertex2f(pos.x, pos.y + dim.y);
-      glTexCoord2f(0, 1);
-      glVertex2f(pos.x + dim.x, pos.y + dim.y);
-      glTexCoord2f(1, 1);
-      glVertex2f(pos.x + dim.x, pos.y);
-      glEnd();
-      glDisable(GL_TEXTURE_2D);
-      error_handling(__LINE__);
-      glDisable(GL_MULTISAMPLE);
-    }
+  pop_projection_matrix();
 }
 

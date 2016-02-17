@@ -37,7 +37,7 @@ CInstrumentHand::CInstrumentHand():
 CInstrumentHand::~CInstrumentHand()
 {
 }
-  
+
 int CInstrumentHand::get_first_string(float f)
 {
   return 0;
@@ -87,7 +87,7 @@ int CInstrumentHand::get_string_abs_note(int string)
 }
     
 //-----------------------------------------------------------------------------------------------------
-    
+
 CInstrumentHandPiano::CInstrumentHandPiano()
 {
   int octave;
@@ -179,7 +179,7 @@ int CInstrumentHandPiano::get_string_abs_note(int string)
 // Violin string selection, the real shit
 
 CInstrumentHandViolin::CInstrumentHandViolin():
-  m_cnotes_per_string(30),
+  m_cnotes_per_string(24),
   m_cstring_num(4)
 {
   int note, octave;

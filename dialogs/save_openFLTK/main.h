@@ -23,11 +23,14 @@ typedef struct s_app_data
 {
   std::string  path;
   std::string  music_path;
+  std::string  audio_files_path;
   int          xpos;
   int          ypos;
   CTCP_Client *ptcpclient;
   Fl_Window   *pwindow;
   Fl_Native_File_Chooser *pfnfc;
+  Fl_Native_File_Chooser *pfnfc_audiofile;
   std::string  filename;
+  bool         bpath_changed;
   pthread_t    threadclient;
 }              t_app_data;

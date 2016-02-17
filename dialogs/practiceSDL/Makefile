@@ -84,9 +84,8 @@ clean:
 
 main.o: main.h tcpclient.h threads.h
 callbacks.o: callbacks.h
-tcpclient.o: tcpclient.h messages_xml_decoder.h
+tcpclient.o: tcpclient.h
 threads.o: main.h tcpclient.h threads.h
-messages_xml_decoder.o: messages_xml_decoder.h
 vrender.o: stringcolor.h gfxareas.h mesh.h gl2Dprimitives.h score.h pictures.h f2n.h fingerender.h vrender.h 
 
 OBJS =  $(OBJDIR)/main.o
@@ -113,6 +112,7 @@ COMMONOBJS += $(OBJDIR)/score.o
 COMMONOBJS += $(OBJDIR)/cfgfile.o
 COMMONOBJS += $(OBJDIR)/tcpclient.o
 COMMONOBJS += $(OBJDIR)/mesh.o
+COMMONOBJS += $(OBJDIR)/glShaders.o
 COMMONOBJS += $(OBJDIR)/gl2Dprimitives.o
 
 $(COMMONOBJS): $(OBJDIR)/%.o : $(COMMONSRCDIR)/%.cpp

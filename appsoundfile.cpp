@@ -50,6 +50,7 @@
 #include "scorerenderer.h"
 #include "card.h"
 #include "messages.h"
+#include "tcp_message_receiver.h"
 #include "messages_network.h"
 #include "app.h"
 #include "sdlcalls.h"
@@ -226,8 +227,11 @@ bool Cappdata::load_sound_buffer(string file_name)
   int       numframes;
   int       readframes;
   int       readsize;
+  int       i, j, samples;
+  float     mono_snd_buffer[4096];  
   float     snd_buffer[4096];
   double    endtimecode;
+  bool      bmerge_channels;
 
   play_record_enabled(false);
   LOCK;
@@ -235,6 +239,7 @@ bool Cappdata::load_sound_buffer(string file_name)
   UNLOCK;
   m_opened_a_file = true;
   // Open sound file
+  sndInfo.format = 0;
   sndFile = sf_open(file_name.c_str(), SFM_READ, &sndInfo);
   if (sndFile == NULL)
     {
@@ -242,19 +247,23 @@ bool Cappdata::load_sound_buffer(string file_name)
       return true;
    }
   // Check format - 16bit PCM
-  if (sndInfo.format != (SF_FORMAT_WAV | SF_FORMAT_PCM_16))
+  if (!(sndInfo.format == (SF_FORMAT_WAV | SF_FORMAT_PCM_16) || sndInfo.format == (SF_FORMAT_FLAC | SF_FORMAT_PCM_16)))
     {
-      fprintf(stderr, "Input should be 16bit Wav\n");
+      fprintf(stderr, "Input should be 16bit Wav or 16bit Flac\n");
       sf_close(sndFile);
       return true;
    }
-   // Check channels - mono
-  if (sndInfo.channels != 1)
+   // Check channels - mono is required, therefore merge the channels if needed
+  bmerge_channels = (sndInfo.channels != 1);
+  if (bmerge_channels)
     {
-      fprintf(stderr, "Wrong number of channels\n");
-      sf_close(sndFile);
+      fprintf(stderr, "load_sound_buffer: Merging audio channels into a mono track.\n");
+    }
+  if ((sndInfo.channels & 1) && sndInfo.channels != 1)
+    {
+      fprintf(stderr, "load_sound_buffer: warning, odd number of channels.\n");
       return true;
-   }
+    }
   // Free the previously recorded data and clear the track image
   clear_sound();
   LOCK;
@@ -264,7 +273,22 @@ bool Cappdata::load_sound_buffer(string file_name)
     {
       readsize = numframes < 4096? numframes : 4096;
       readframes = sf_readf_float(sndFile, snd_buffer, readsize);
-      pshared_data->pad->add_data(snd_buffer, readframes);
+      if (bmerge_channels)
+	{
+	  samples = readframes / sndInfo.channels;
+	  for (i = 0; i < samples; i++)
+	    {
+	      mono_snd_buffer[i] = 0;
+	      for (j = 0; j < sndInfo.channels; j++)
+		{
+		  mono_snd_buffer[i] += snd_buffer[i * sndInfo.channels + j];
+		}
+	      mono_snd_buffer[i] = mono_snd_buffer[i] / (float)sndInfo.channels;
+	    }
+	  pshared_data->pad->add_data(mono_snd_buffer, samples);
+	}
+      else
+	pshared_data->pad->add_data(snd_buffer, readframes);
       numframes -= readframes;
     }
   numframes = pshared_data->pad->get_samplenum();

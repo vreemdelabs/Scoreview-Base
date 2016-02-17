@@ -83,6 +83,10 @@ enum edialog_message
     message_send_pa_devices_list,
     message_score_transfer,
     message_note_transfer,
-    message_note_highlight
+    message_note_highlight,
+    message_close_storage_dialog,
+    message_close_addinstrument_dialog,
+    message_close_practice_dialog,
+    message_close_config_dialog
   };
 

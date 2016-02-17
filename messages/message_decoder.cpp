@@ -1,6 +1,6 @@
 /*
  Scoreview (R)
- Copyright (C) 2015 Patrick Areny
+ Copyright (C) 2015-2016 Patrick Areny
  All Rights Reserved.
 
  Scoreview is free software: you can redistribute it and/or modify
@@ -112,7 +112,7 @@ string messagetypestr(int type)
 int Cmessage_coding::get_next_wire_message(char *msg_data, int received_size)
 {
 //#define SHOW_MESSAGES
-  int                   *psize;
+  int32_t               *psize;
   std::string            str;
   scoreview::wireMessage msg;
 
@@ -123,17 +123,21 @@ int Cmessage_coding::get_next_wire_message(char *msg_data, int received_size)
       printf("Error: message too short to be consistent.\n");
       exit(EXIT_FAILURE);
     }
-  if (msg_data[0] != (NMAGICN && 0xFF) ||
-      msg_data[1] != ((NMAGICN >> 8) && 0xFF))
+  if (msg_data[0] != (NMAGICN & 0xFF) ||
+      msg_data[1] != ((NMAGICN >> 8) & 0xFF))
     {
-      printf("Error: wrong message's magic number.\n");
+      printf("Error: wrong message's magic number: 0x%x %x.\n", msg_data[1], msg_data[0]);
       exit(EXIT_FAILURE);
     }
-  psize = (int*)&msg_data[2];
+  psize = (int32_t*)&msg_data[2];
   if (*psize < 1)
     {
       printf("Error: wire message size must be wrong.\n");
       exit(EXIT_FAILURE);
+    }
+  if (received_size < *psize + HEADER_SIZE)
+    {
+      return 0;
     }
   // Recover the string
   str = string(&msg_data[6], *psize);
@@ -170,7 +174,7 @@ int Cmessage_coding::get_next_wire_message(char *msg_data, int received_size)
   int size = msg.ByteSize();
   printf("message size is 6 bytes header + %dbytes\n", size);
 #endif
-  return *psize + 6;
+  return *psize + HEADER_SIZE;
 }
 
 eWiremessages Cmessage_coding::message_type()

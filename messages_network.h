@@ -36,6 +36,17 @@ typedef struct   s_internal_message
   char           data[MESSAGE_CONTENT_SIZE];
 }                t_internal_message;
 
+class Creceive_callback_data
+{
+ public:
+  Creceive_callback_data(void *pmess);
+  ~Creceive_callback_data();
+  
+ public:
+  Creceived_message  m_message ;
+  void              *m_pmess;
+};
+
 class CnetworkMessaging
 {
  public:
@@ -43,10 +54,9 @@ class CnetworkMessaging
   ~CnetworkMessaging();
 
   int  init_the_network_messaging();
-  void remote_close_all_the_dialogs();
 
   bool Send_to_network_client(edialogs_codes dialog_code, const char *pdata, int length);
-  bool Send_to_dialogs(edialog_message internal_message_code, const char *pdata, int size);
+  bool Send_to_dialogs(edialog_message internal_message_code, const char *pdata, int size, void *pbevt = NULL);
   bool Send_to_dialogs_with_delay(edialog_message internal_message_code, const char *pdata, int size);
   bool Send_to_dialogs_delayed_messages(double last_time);
   void Server_loop();
@@ -59,6 +69,13 @@ class CnetworkMessaging
   void unregister_dialog_connection(struct bufferevent *pevt);
   bool is_practice_dialog_enable();
   void Exit_EventLoop();
+  void add_cb_data(Creceive_callback_data *pcbdata);
+  void lock_datapipe();
+  void unlock_datapipe();
+
+ private:
+  void remote_close_all_the_dialogs();
+  void remote_close_dialog(edialogs_codes code);
 
  private:
   bool                Server_init();
@@ -69,6 +86,7 @@ class CnetworkMessaging
 
  private:
   pthread_mutex_t               m_message_mutex;
+  pthread_mutex_t               m_datapipe_mutex;
   int                           m_sdl_user_event_dialog_message_available;
   std::list<t_internal_message> m_app2network_message_list;
   std::list<t_internal_message> m_app2network_message_delayed_list;
@@ -86,8 +104,18 @@ class CnetworkMessaging
   struct event          *m_pinternal_event;
   struct evconnlistener *m_plistener;
   struct sockaddr_in    *m_plisten_socket;
+  //
+  std::list<Creceive_callback_data*> m_rcv_data_list;
 };
 
+//#define INSPECT_INTERLOCK
+#ifdef INSPECT_INTERLOCK
+#define LOCK_MSG   printf("-> Locking %s %d\n", __FILE__, __LINE__); pthread_mutex_lock(&this->m_message_mutex);
+#define UNLOCK_MSG pthread_mutex_unlock(&this->m_message_mutex); printf("<- Unlocking %s %d\n", __FILE__, __LINE__);
+#else
 #define LOCK_MSG   pthread_mutex_lock(&this->m_message_mutex);
 #define UNLOCK_MSG pthread_mutex_unlock(&this->m_message_mutex);
+#endif
 
+#define LOCK_DATA_PIPE   pthread_mutex_lock(&this->m_datapipe_mutex);
+#define UNLOCK_DATA_PIPE pthread_mutex_unlock(&this->m_datapipe_mutex);

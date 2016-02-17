@@ -288,6 +288,8 @@ class CScorePlacement
   float    m_vzoom;   // vertical zoom factor
   float    m_vmove;   // vertical offset when moving the view down
 
+  int      m_rest_staff_octave;
+
   bool     m_bautobeam;
   bool     m_bpracticing;
 

@@ -44,6 +44,7 @@
 #include "scoreedit.h"
 #include "scorerenderer.h"
 #include "messages.h"
+#include "tcp_message_receiver.h"
 #include "messages_network.h"
 #include "card.h"
 #include "app.h"
@@ -804,53 +805,6 @@ void Cappdata::create_filter_play_message(t_coord boxstart, int x, int y, t_coor
 	  SLOCK;
 	  plist->push_front(cmd);
 	  add_sound_selection_to_fifo(&cmd);
-	  SUNLOCK;
-	}
-    }
-  wakeup_bandpass_thread();
-}
-
-void Cappdata::create_filter_play_message_from_track(int xstart, int xstop, t_coord pos, t_coord dim)
-{
-  t_shared *pshared_data = (t_shared*)&m_shared_data;
-  float    fbase;
-  float    fmax;
-  double   t1, t2;
-  double   duration;
-  int      xp;
-  t_audioOutCmd cmd;
-  std::list<t_audioOutCmd> *plist = &pshared_data->filter_cmd_list;
-
-  flush_filtered_strips();
-  delete_filter_commands(&m_note_selection.cmdlist, true);
-  LOCK;
-  // Start and stop time
-  duration = pshared_data->trackend;
-  UNLOCK;
-  xp = xstart < xstop? xstart : xstop;
-  t1 = (double)(xp - pos.x) * duration / (double)dim.x;
-  xp = xstart > xstop? xstart : xstop;
-  t2 = (double)(xp - pos.x) * duration / (double)dim.x;
-  // All the frequency range
-  fbase = MINNOTEF;
-  fmax = 44000;
-  t2 = t2 - t1 > MAX_INTRACK_PLAY_TIME? t1 + MAX_INTRACK_PLAY_TIME : t2;
-  cmd.start = t1;
-  cmd.stop = t2;
-  cmd.playdelay =  0.;
-  cmd.playstart = -1.;
-  cmd.bsubstract = false;
-  cmd.notestate = state_wait_filtering;
-  cmd.bands = 1;
-  cmd.pnote = NULL;
-  if (fabs(cmd.stop - cmd.start) > 0.005)
-    {
-      cmd.fhicut[0] = fmax;
-      cmd.flocut[0] = fbase;
-      if (fabs(cmd.fhicut[0] - cmd.flocut[0]) > 1.) // Hz
-	{
-	  SLOCK;
-	  plist->push_front(cmd);
 	  SUNLOCK;
 	}
     }

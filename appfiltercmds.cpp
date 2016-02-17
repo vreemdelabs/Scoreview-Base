@@ -44,6 +44,7 @@
 #include "scoreedit.h"
 #include "scorerenderer.h"
 #include "messages.h"
+#include "tcp_message_receiver.h"
 #include "messages_network.h"
 #include "card.h"
 #include "app.h"
@@ -155,6 +156,7 @@ void Cappdata::reset_filter_on_loop_commands(t_note_selection *pnote_selection)
     }
 }
 
+// Deletes any filtered sound band except note selections if specified
 void Cappdata::delete_filter_commands(std::list<t_audioOutCmd*> *pcmdlist, bool bkeep_loop_cmds)
 {
   t_shared *pshared_data = (t_shared*)&m_shared_data;
@@ -178,6 +180,7 @@ void Cappdata::delete_filter_commands(std::list<t_audioOutCmd*> *pcmdlist, bool 
     }
 }
 
+// If anythin is playing, send a command to clear it to the sound thread
 void Cappdata::flush_filtered_strips()
 {
   t_shared *pshared_data = (t_shared*)&m_shared_data;
@@ -198,13 +201,15 @@ void Cappdata::flush_filtered_strips()
   UNLOCK;
   // Wait for the flush
   FLOCK;
-  while (pshared_data->filtered_sound_list.size() > 0)
+  bempty = pshared_data->filtered_sound_list.size() == 0;
+  FUNLOCK;
+  while (!bempty)
     {
+      FLOCK;
+      bempty = pshared_data->filtered_sound_list.size() == 0;
       FUNLOCK;
       usleep(5000);
-      FLOCK;
     }
-  FUNLOCK;
 }
 
 // Clears any playing note
@@ -312,3 +317,50 @@ bool Cappdata::queued_filtered_band()
   return bresult;
 }
 
+void Cappdata::create_filter_play_message_from_track(int xstart, int xstop, t_coord pos, t_coord dim)
+{
+  t_shared *pshared_data = (t_shared*)&m_shared_data;
+  float    fbase;
+  float    fmax;
+  double   t1, t2;
+  double   duration;
+  int      xp;
+  t_audioOutCmd cmd;
+  std::list<t_audioOutCmd> *plist = &pshared_data->filter_cmd_list;
+
+  flush_filtered_strips();
+  delete_filter_commands(&m_note_selection.cmdlist, true); // keep the note selction bands
+  LOCK;
+  // Start and stop time
+  duration = pshared_data->trackend;
+  UNLOCK;
+  xp = xstart < xstop? xstart : xstop;
+  t1 = (double)(xp - pos.x) * duration / (double)dim.x;
+  xp = xstart > xstop? xstart : xstop;
+  t2 = (double)(xp - pos.x) * duration / (double)dim.x;
+  // All the frequency range
+  fbase = MINNOTEF;
+  fmax = 44000;
+  t2 = t2 - t1 > MAX_INTRACK_PLAY_TIME? t1 + MAX_INTRACK_PLAY_TIME : t2;
+  cmd.start = t1;
+  cmd.stop = t2;
+  cmd.playdelay =  0.;
+  cmd.playstart = -1.;
+  cmd.bsubstract = false;
+  cmd.bloop_data = false;
+  cmd.notestate = state_wait_filtering;
+  cmd.bands = 1;
+  cmd.pnote = NULL;
+  if (fabs(cmd.stop - cmd.start) > 0.005)
+    {
+      cmd.fhicut[0] = fmax;
+      cmd.flocut[0] = fbase;
+      if (fabs(cmd.fhicut[0] - cmd.flocut[0]) > 1.) // Hz
+	{
+	  SLOCK;
+	  plist->push_front(cmd);
+	  SUNLOCK;
+	}
+    }
+  wakeup_bandpass_thread();
+}

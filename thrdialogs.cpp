@@ -30,6 +30,7 @@
 #include <event2/buffer.h>
 
 #include "messages.h"
+#include "tcp_message_receiver.h"
 #include "messages_network.h"
 #include "thrdialogs.h"
 

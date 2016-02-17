@@ -48,9 +48,10 @@ bool Cmessage_coding::build_wire_message(char *message_out, int bsize, int *size
       return false;
     }
   *size = strsize + 6;
-  message_out[0] = NMAGICN && 0xFF;
-  message_out[1] = (NMAGICN >> 8) && 0xFF;
-  psz = (int*)&message_out[2];
+  message_out[0] = NMAGICN & 0xFF;
+  message_out[1] = (NMAGICN >> 8) & 0xFF;
+  printf("message outmagicnumber is %x %x\n", message_out[1], message_out[0]);
+  psz = (int32_t*)&message_out[2];
   *psz = strsize;
   po = &message_out[6];
   for (i = 0; i < strsize; i++)

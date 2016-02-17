@@ -710,7 +710,7 @@ void probe_audio_APIs_in_locked_area(t_shared* pshared_data)
       UNLOCK;
 #ifdef SHOW_TIME_LOCKS
       t2 = SDL_GetTicks();
-      if (t2 - t1 > 4) printf("Warning: audio thread locked for more than %dms\n", t2 - t1);
+      if (t2 - t1 > 20) printf("Warning: audio thread locked for more than %dms\n", t2 - t1);
 #endif
       // Filter and play selected sounds or just write null sound
       if (boutput)
@@ -719,7 +719,7 @@ void probe_audio_APIs_in_locked_area(t_shared* pshared_data)
 	}
 #ifdef SHOW_TIME_LOCKS
       t1 = SDL_GetTicks();
-      if (t1 - t2 > 4) printf("Warning: audio thread locked for more than %dms\n", t1 - t2 );
+      if (t1 - t2 > 20) printf("Warning: audio thread locked for more than %dms at play filtered.\n", t1 - t2 );
 #endif
 #ifndef USE_BLOCKINGIO
       double framespersecond = (double)samplerate / (double)FRAMES_PER_BUFFER;

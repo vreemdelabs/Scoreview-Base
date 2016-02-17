@@ -42,6 +42,7 @@
 CScorePlacement::CScorePlacement(int notenum):
   m_color(0xFF000000),
   m_notenum(notenum),
+  m_rest_staff_octave(4),
   m_bautobeam(false),
   m_bpracticing(false),
   m_phand(NULL)
@@ -482,7 +483,7 @@ float CScorePlacement::appy2notefrequ(int int_y)
     }
   octave = octave > 8? 8 : octave;
   //printf("octave=%d, part=%d\n", octave, (int)(floor(part)));
-  // Ceci n'est pas linéaire 14 -> 12
+  // Ceci n'est pas linï¿½aire 14 -> 12
   part = part - floor(part);
   note = (int)floor(part * 2. * BAROQUE_NOTES_PER_OCTAVE);
   note = note > 13? 13 : (note <  0?  0 : note);

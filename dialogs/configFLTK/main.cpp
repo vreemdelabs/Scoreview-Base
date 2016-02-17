@@ -101,8 +101,9 @@ void close_function(void *pdata)
   t_app_data *papp_data = (t_app_data*)pdata;
 
   save_coordinates(papp_data);
+  usleep(200000);
   papp_data->ptcpclient->close_function(string(CONFIG_DIALOG_CODENAME));
-  usleep(100000);
+  usleep(200000);
   release_threads(papp_data);
   delete papp_data->ptcpclient;
   papp_data->pwindow->hide(); // Close the window

@@ -108,15 +108,26 @@ void CScorePlacement::add_rectangle_polygon(float x, float y, float dimx, float 
 {
   t_polygon pol;
 
-  pol.point[0].x = x;
+  // Add the two triangles of the rectangle
+  pol.point[0].x = x;        // 1
   pol.point[0].y = y;
-  pol.point[1].x = x + dimx;
-  pol.point[1].y = y;
-  pol.point[2].x = x + dimx;
-  pol.point[2].y = y + dimy;
-  pol.point[3].x = x;
-  pol.point[3].y = y + dimy;
-  pol.nbpoints = 4;
+  pol.point[0].z = 0;
+  pol.point[1].x = x + dimx; // 3
+  pol.point[1].y = y + dimy;
+  pol.point[1].z = 0;
+  pol.point[2].x = x + dimx; // 2
+  pol.point[2].y = y;
+  pol.point[2].z = 0;
+  pol.point[3].x = x;        // 1
+  pol.point[3].y = y;
+  pol.point[3].z = 0;
+  pol.point[4].x = x + dimx; // 3
+  pol.point[4].y = y + dimy;
+  pol.point[4].z = 0;
+  pol.point[5].x = x;        // 4
+  pol.point[5].y = y + dimy;
+  pol.point[5].z = 0;
+  pol.nbpoints = 6;
   pol.color = color;
   m_polygon_list.push_front(pol);  
 }

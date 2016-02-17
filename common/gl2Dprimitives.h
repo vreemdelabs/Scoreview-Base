@@ -1,6 +1,6 @@
 /*
  Scoreview (R)
- Copyright (C) 2015 Patrick Areny
+ Copyright (C) 2015-2016 Patrick Areny
  All Rights Reserved.
 
  Scoreview is free software: you can redistribute it and/or modify
@@ -22,6 +22,10 @@
 
 #define IDENTCOLOR 0xFFFFFFFF
 
+#define MAX_GL_VERTEX_ARRAY_SIZE (3 * 1024)
+#define MAX_TRI_SZ 64
+#define PROJECTION_STACK_SIZE 4
+
 class Cpicture
 {
  public:
@@ -36,6 +40,19 @@ class Cpicture
   SDL_Surface *m_texture;
   GLuint      m_OpenGL_texture_id;
 };
+
+typedef struct s_gl_shader_Inouts
+{
+  GLuint       program_color;
+  GLint        uniform_mvp;
+  GLint        uniform_color;
+  GLint        attribute_vertpos;
+  GLuint       program_texture;
+  GLint        uniform_text_mvp;  
+  GLint        uniform_text_unit;
+  GLint        attribute_text_vertpos;
+  GLint        attribute_text_coord0;  
+}              t_gl_shader_Inouts;
 
 class CGL2Dprimitives
 {
@@ -65,6 +82,7 @@ class CGL2Dprimitives
   bool get_texture_size(std::string name, t_coord *pdim);
   void update_texture_texels(std::string name, int width, int height, void *pmap);
   void draw_texture(std::string name, t_fcoord pos, t_fcoord dim, bool filtering, bool blend = false, t_fcoord *psubdim = NULL, t_fcoord *poffset = NULL);
+  void draw_texture_quad(std::string name, t_fcoord *points, bool filtering, bool blend, t_fcoord *psubdim = NULL, t_fcoord *poffset = NULL);
   void surface_to_screen2(t_fcoord pos, t_fcoord dim, SDL_Surface *surface, bool blended = false);
   void surface_to_screen2(t_fcoord pos, t_fcoord dim, int width, int height, void *pmap, bool blended = false);
   void pixdata_to_screen_area(Cgfxarea *pw, int width, int height, void *pmap);
@@ -96,7 +114,8 @@ class CGL2Dprimitives
 
  private:
   void color2openGl(int color);
-  void texture_quad(t_fcoord pos, t_fcoord dim, GLuint tidentifier, t_fcoord *subdim = NULL, t_fcoord *suboffset = NULL, bool blending = false);
+  void texture_quad(t_fcoord *points, GLuint tidentifier, t_fcoord *ptcoord, bool blending);
+  void texture_rectangle(t_fcoord pos, t_fcoord dim, GLuint tidentifier, t_fcoord *ptcoord = NULL, bool blending = false);
   Cpicture* get_picture(std::string name);
   Cpicture* create_empty_texture(int w, int h, std::string name);
   void create_work_texture();
@@ -106,6 +125,10 @@ class CGL2Dprimitives
   void destroy_sp_texture();
   bool error_handling(int line);
   void add_circular_contour(int *pindex, t_fcoord center, float angle_start, float angle_stop, float radius);
+  void my_ortho(float left, float right, float bottom, float top, float nearval, float farval);
+  void push_projection_matrix();
+  void pop_projection_matrix();
+  bool CreateProgram(t_gl_shader_Inouts *pgl_io);
 
  private:
   SDL_Window            *m_sdl_window;
@@ -117,5 +140,16 @@ class CGL2Dprimitives
   Cpicture*              m_transfert_texture;
   Cpicture*              m_spectrum_texture;
   CMesh                  m_reallocMesh;
+ public:
+  GLuint                 m_vbo_vertexbuffer;
+  GLfloat                m_vertex_buffer_data[MAX_GL_VERTEX_ARRAY_SIZE];
+  GLuint                 m_ibo_triangles;
+  GLushort               m_triangles[MAX_TRI_SZ];
+  t_gl_shader_Inouts     m_sh;
+  float                  m_color[4];
+  float                  m_clear_color;
+  float                  m_projection_matrix[16];
+  int                    m_stack_index;
+  float                  m_projection_matrix_sav[PROJECTION_STACK_SIZE * 16];
 };
 

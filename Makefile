@@ -101,7 +101,7 @@ cleanall: clean
 	cd ./DSPCPPFilterLib && make clean
 	cd ./messages && make clean
 	cd ./dialogs/save_openFLTK && make clean
-	cd ./dialogs/practiceSDL && make clean
+	cd ./dialogs/practiceSDLA && make clean
 	cd ./dialogs/configFLTK && make clean
 	cd ./dialogs/addinstrumentFLTK && make clean
 
@@ -192,6 +192,8 @@ COMMONOBJS += $(OBJDIR)/gfxareas.o
 COMMONOBJS += $(OBJDIR)/score.o
 COMMONOBJS += $(OBJDIR)/cfgfile.o
 COMMONOBJS += $(OBJDIR)/mesh.o
+COMMONOBJS += $(OBJDIR)/tcp_message_receiver.o
+COMMONOBJS += $(OBJDIR)/glShaders.o
 COMMONOBJS += $(OBJDIR)/gl2Dprimitives.o
 
 $(COMMONOBJS): $(OBJDIR)/%.o : $(COMMONSRCDIR)/%.cpp
@@ -215,7 +217,7 @@ project:
 	cd ./DSPCPPFilterLib && make all
 	cd ./messages && make all
 	cd ./dialogs/save_openFLTK && make all
-	cd ./dialogs/practiceSDL && make all
+	cd ./dialogs/practiceSDLA && make all
 	cd ./dialogs/configFLTK && make all
 	cd ./dialogs/addinstrumentFLTK && make all
 	make all

@@ -446,6 +446,33 @@ bool Cxml_cfg_file_decoder::read_music_path(std::string *pmusic_path)
   return false;
 }
 
+bool Cxml_cfg_file_decoder::read_audio_files_path(std::string *paudio_file_path)
+{
+  string             ValueStr;
+  TiXmlNode*         pnode;
+  string             v;
+
+  pnode = m_pdoc->RootElement();
+  //m_pdoc->Print(); 
+  while (pnode != NULL)
+    {
+      if (pnode->Type() == TiXmlNode::TINYXML_ELEMENT)
+	{
+	  ValueStr = pnode->ValueStr();
+	  if (ValueStr == string("AudioFilesDirectory"))
+	    {
+	      if (get_string_attribute(pnode, string("audio_files_dir"), &v))
+		{
+		  *paudio_file_path = v;
+		  return true;
+		}
+	    }
+	}
+      pnode = pnode->NextSiblingElement();
+    }
+  return false;
+}
+
 void Cxml_cfg_file_decoder::read_edit_params(bool *pautobeam, bool *pchordfuse)
 {
   string             ValueStr;
@@ -555,6 +582,15 @@ void Cxml_cfg_file_decoder::write_music_path(std::string music_path)
 
    pnew_element = new TiXmlElement("MusicDirectory");
    pnew_element->SetAttribute("music_dir", music_path);
+   m_pdoc->LinkEndChild(pnew_element);
+}
+
+void Cxml_cfg_file_decoder::write_audio_files_path(std::string audio_files_path)
+{
+   TiXmlElement *pnew_element;
+
+   pnew_element = new TiXmlElement("AudioFilesDirectory");
+   pnew_element->SetAttribute("audio_files_dir", audio_files_path);
    m_pdoc->LinkEndChild(pnew_element);
 }
 

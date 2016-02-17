@@ -25,12 +25,8 @@
 
 #include <errno.h>
 #ifdef __LINUX
-//#include <sys/types.h>
-//#include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-//#include <syslog.h>
-//#include <signal.h>
 #else
 #include <winsock2.h>
 #include <windows.h>

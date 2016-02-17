@@ -64,11 +64,11 @@ void CScorePlacement::place_whole_or_half_rest(double start, double duration, in
   h = m_zradius;
   if (timedivs <= 48)
     {
-      y = note2y(0, 5); // Rectangle on the middle bottom line      
+      y = note2y(0, m_rest_staff_octave + 1); // Rectangle on the middle bottom line
     }
   else
     {
-      y = note2y(2, 5); // Rectangle on the middle top line
+      y = note2y(2, m_rest_staff_octave + 1); // Rectangle on the middle top line
     }
   x0 = ((start + duration / 2. - m_starttime) * m_fdim.x / m_viewtime);
   add_rectangle_polygon(x0 - h, y, 2 * h, h, color);
@@ -111,9 +111,9 @@ void CScorePlacement::rest_placement(t_measure_occupancy *po)
 //#define SHOW_MASK_TIMEDIVS
 #ifdef SHOW_MASK_TIMEDIVS
       {
-	float                x, y, dx, dy;
+	float x, y, dx, dy;
 	
-	y = note2y(4, 4);
+	y = note2y(4, m_rest_staff_octave);
 	dy = m_fdim.y / 30.;
 	x  = (((start + (double)i * timediv) - m_starttime) * m_fdim.x / m_viewtime);
 	dx = timediv * m_fdim.x / m_viewtime;
@@ -146,19 +146,19 @@ void CScorePlacement::rest_placement(t_measure_occupancy *po)
 		  {
 		    if (empty_counter > 12)
 		      {
-			y = note2y(5, 5);
+			y = note2y(5, m_rest_staff_octave + 1);
 			place_rest_mesh(t, y, d, black, (char*)"qnrest");
 		      }
 		    else
 		      {
 			if (empty_counter > 6)
 			  {
-			    y = note2y(2, 5);
+			    y = note2y(2, m_rest_staff_octave + 1);
 			    place_rest_mesh(t, y, d, black, (char*)"enrest");
 			  }
 			else
 			  {
-			    y = note2y(2, 5);
+			    y = note2y(2, m_rest_staff_octave + 1);
 			    place_rest_mesh(t, y, d, black, (char*)"snrest");
 			  }
 		      }
@@ -204,7 +204,7 @@ void CScorePlacement::place_rests(std::list<CMesure*> *pml, std::list<t_note_ske
   double               timediv, start;
   float                x, y, dx, dy;
 
-  y = note2y(4, 4);
+  y = note2y(4, m_rest_staff_octave + 1);
   dy = m_fdim.y / 30.;
   fiter = prendered_notes_list->begin();
   while (fiter != prendered_notes_list->end())

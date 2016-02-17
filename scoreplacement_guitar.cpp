@@ -46,6 +46,7 @@ using namespace std;
 
 CScorePlacementGuitar::CScorePlacementGuitar(int notenum):CScorePlacement(notenum)
 {
+  m_rest_staff_octave = 3; // The rests will be placed an octave lower
   m_radius = m_fdim.y / (float)(m_notenum + 1 + 4);
   m_zradius = m_radius * m_vzoom;
   m_phand = new CInstrumentHandGuitar();

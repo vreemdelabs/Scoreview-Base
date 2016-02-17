@@ -1,6 +1,6 @@
 /*
  Scoreview (R)
- Copyright (C) 2015 Patrick Areny
+ Copyright (C) 2015-2016 Patrick Areny
  All Rights Reserved.
 
  Scoreview is free software: you can redistribute it and/or modify
@@ -16,6 +16,7 @@
  You should have received a copy of the GNU General Public License
  along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
+
 #include <stdio.h>
 #include <string.h>
 #include <list>
@@ -24,12 +25,8 @@
 
 #include <errno.h>
 #ifdef __LINUX
-//#include <sys/types.h>
-//#include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-//#include <syslog.h>
-//#include <signal.h>
 #else
 #include <winsock2.h>
 #include <windows.h>
@@ -79,7 +76,7 @@ void write_cb(struct bufferevent *pbev, void *pappdata)
   // Check if it was the last message
   if (pclient->check_closing_state())
     {
-      //printf("close\n");
+      //printf("client closed\n");
       pclient->set_to_closed_state();
       pclient->Exit_EventLoop();
     }

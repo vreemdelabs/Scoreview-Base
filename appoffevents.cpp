@@ -49,7 +49,7 @@
 #include "scorerenderer.h"
 #include "card.h"
 #include "messages.h"
-#include "tcp_ip.h"
+#include "tcp_message_receiver.h"
 #include "messages_network.h"
 #include "app.h"
 #include "sdlcalls.h"

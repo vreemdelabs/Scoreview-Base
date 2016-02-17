@@ -1,0 +1,13 @@
+export PREBUILT=~/android/android-ndk-r10e/toolchains/arm-linux-androideabi-4.9
+export PLATFORM=~/android/android-ndk-r10e/platforms/android-17/arch-arm/
+
+./configure --host=arm-eabi --enable-cross-compile  --with-protoc=protoc --disable-shared --host=arm-linux-androideabi \
+CC=$PREBUILT/prebuilt/linux-x86_64/bin/arm-linux-androideabi-gcc \
+CXX=$PREBUILT/prebuilt/linux-x86_64/bin/arm-linux-androideabi-g++ \
+LDFLAGS="-L$PLATFORM/usr/lib/ --sysroot=$PLATFORM" \
+CPPFLAGS="-I$PLATFORM/usr/include/"
+
+
+
+ 
+

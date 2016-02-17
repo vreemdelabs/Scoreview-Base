@@ -16,7 +16,7 @@
  You should have received a copy of the GNU General Public License
  along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
-//#include <stdlib.h>
+
 #include <stdio.h>
 #include <math.h>
 #include <unistd.h>
@@ -55,6 +55,7 @@
 #include "tcp_ip.h"
 #include "messages.h"
 #include "message_decoder.h"
+#include "tcp_message_receiver.h"
 #include "messages_network.h"
 
 using namespace std;
@@ -66,44 +67,56 @@ using namespace std;
 // This callback is invoked when there is data to read on bev.
 static void network_read_cb(struct bufferevent *pbev, void *puser_data)
 {
-  struct evbuffer   *input = bufferevent_get_input(pbev);
-  size_t             len   = evbuffer_get_length(input);
-  t_internal_message msg;
-  CnetworkMessaging *pshared_mess = (CnetworkMessaging*)puser_data;
+  struct evbuffer        *input = bufferevent_get_input(pbev);
+  size_t                  len   = evbuffer_get_length(input);
+  char                    buffer[MESSAGE_BUFFER_SIZE];
+  t_internal_message      msg;
+  Creceive_callback_data *pcd = (Creceive_callback_data*)puser_data;
+  CnetworkMessaging      *pshared_mess = (CnetworkMessaging*)pcd->m_pmess;
 
-  if (len > MESSAGE_CONTENT_SIZE)
+  if (len > MESSAGE_BUFFER_SIZE)
     {
       printf("Server error: skiped a message, too big.\n");
       return ;
     }
-#ifdef __DEBUG
-  printf("data size==%d\n", (int)len);
+#ifdef _DEBUG
+  printf("Scoreview received netork data size=%d\n", (int)len);
 #endif
-  if (evbuffer_remove(input, msg.data, len) == -1)
+  if (evbuffer_remove(input, buffer, len) == -1)
     {
       printf("Server warning: failed to recover a network message.\n");
       return ;
     }
-  msg.data[len] = 0;
-#ifdef __DEBUG
-  printf("we got some data:\n%s\n", msg.data);
+  buffer[len] = 0;
+  //
+  pcd->m_message.add_data(buffer, len);
+  // Get all the messages contained in the buffer
+  while (pcd->m_message.available_message())
+    {
+      pcd->m_message.get_message(msg.data, MESSAGE_CONTENT_SIZE, &msg.size);
+      if (msg.size)
+	{
+#ifdef _DEBUG
+	  printf("we got some data: %d bytes\n", msg.size);
 #endif
-  msg.message_code = -1;
-  msg.passociated_event = pbev;
-  msg.size = len;
-  pshared_mess->push_message(&msg);
-  pshared_mess->triger_the_sdl_user_event();
-#ifdef __DEBUG
-  printf("message pushed\n");
+	  msg.message_code = -1;
+	  msg.passociated_event = pbev;
+	  pshared_mess->push_message(&msg);
+	  pshared_mess->triger_the_sdl_user_event();
+#ifdef _DEBUG
+	  printf("message pushed\n");
 #endif
+	}
+    }
 }
 
-static void network_write_cb(struct bufferevent *pbev, void *pappdata)
+static void network_write_cb(struct bufferevent *pbev, void *puser_data)
 {
-  CnetworkMessaging *pshared_mess = (CnetworkMessaging*)pappdata;
+  Creceive_callback_data *pcd = (Creceive_callback_data*)puser_data;
+  CnetworkMessaging      *pshared_mess = (CnetworkMessaging*)pcd->m_pmess;
 
   //printf("write buffer completed.\n");
-#ifdef __DEBUG
+#ifdef _DEBUG
   printf("BUFFER WRITE SET TO TRUE\n");
 #endif
   pshared_mess->m_write_completed = true;
@@ -112,15 +125,19 @@ static void network_write_cb(struct bufferevent *pbev, void *pappdata)
 // This callback is called on non data-oriented events: errors, closed connection...
 static void network_event_cb(struct bufferevent *bev, short events, void *puser_data)
 {
-  CnetworkMessaging *pshared_mess = (CnetworkMessaging*)puser_data;
+  Creceive_callback_data *pcd = (Creceive_callback_data*)puser_data;
+  CnetworkMessaging      *pshared_mess = (CnetworkMessaging*)pcd->m_pmess;
 
   if (events & BEV_EVENT_ERROR)
     perror("Error from bufferevent!");
-  if (events & BEV_EVENT_EOF)
+  if (events & BEV_EVENT_EOF || events & BEV_EVENT_ERROR)
     {
       printf("Lib Event network event callback: connection closed (eof) or error\n");
+      pshared_mess->lock_datapipe();
       pshared_mess->unregister_dialog_connection(bev);
+      assert(bev != NULL);
       bufferevent_free(bev);
+      pshared_mess->unlock_datapipe();
     }
 }
 
@@ -131,10 +148,11 @@ static void accept_conn_cb(struct evconnlistener *plistener,
 			   int socklen,
 			   void *puser_data)
 {
-  CnetworkMessaging     *pshared_mess = (CnetworkMessaging*)puser_data;
-  struct event_base     *pbase;
-  struct bufferevent    *pbev;
-  t_connection           connection;
+  CnetworkMessaging      *pshared_mess = (CnetworkMessaging*)puser_data;
+  struct event_base      *pbase;
+  struct bufferevent     *pbev;
+  t_connection            connection;
+  Creceive_callback_data *pcd;
 
   pbase = evconnlistener_get_base(plistener);
   pbev  = bufferevent_socket_new(pbase, fd, BEV_OPT_CLOSE_ON_FREE);
@@ -142,8 +160,11 @@ static void accept_conn_cb(struct evconnlistener *plistener,
   connection.dialog = unknown_dialog;
   connection.pevent = pbev;
   pshared_mess->m_active_connections.push_back(connection);
+  // Create the reception data structure
+  pcd = new Creceive_callback_data(pshared_mess);
+  pshared_mess->add_cb_data(pcd);
   // Set the callbacks
-  bufferevent_setcb(pbev, network_read_cb, network_write_cb, network_event_cb, puser_data);
+  bufferevent_setcb(pbev, network_read_cb, network_write_cb, network_event_cb, pcd);
   bufferevent_enable(pbev, EV_READ | EV_WRITE);
   //printf("New connection (ptr=%x)\n", (void*)pbev);
 }
@@ -273,6 +294,15 @@ static void event_log_callback(int severity, const char *msg)
 //               Class section
 //-------------------------------------------------------------------------------------
 
+Creceive_callback_data::Creceive_callback_data(void *pnm):
+  m_pmess(pnm)
+{
+}
+
+Creceive_callback_data::~Creceive_callback_data()
+{
+}
+
 CnetworkMessaging::CnetworkMessaging(int port):
   m_server_port(port)
 {
@@ -282,13 +312,22 @@ CnetworkMessaging::CnetworkMessaging(int port):
 
 CnetworkMessaging::~CnetworkMessaging()
 {
+  std::list<Creceive_callback_data*>::iterator it;
+
 #ifdef __WINDOWS
   WSACleanup();
 #endif
   event_free(m_pinternal_event);
   event_base_free(m_pevt_base);
   pthread_mutex_destroy(&m_message_mutex);
+  pthread_mutex_destroy(&m_datapipe_mutex);
   delete m_plisten_socket;
+  it = m_rcv_data_list.begin();
+  while (it != m_rcv_data_list.end())
+    {
+      delete *it;
+      it++;
+    }
 }
 
 bool CnetworkMessaging::sdl_register_user_events(int *firstevent, int numevents)
@@ -312,6 +351,7 @@ int CnetworkMessaging::init_the_network_messaging()
   int          firstevent;
 
   pthread_mutex_init(&m_message_mutex, NULL);
+  pthread_mutex_init(&m_datapipe_mutex, NULL);
   if (sdl_register_user_events(&firstevent, 1))
     {
       m_sdl_user_event_dialog_message_available = firstevent;
@@ -392,13 +432,23 @@ struct bufferevent* CnetworkMessaging::find_open_connection(int dialog_code)
   iter = m_active_connections.begin();
   while (iter != m_active_connections.end())
     {
-      if ((*iter).dialog == dialog_code)
+      if ((*iter).dialog == dialog_code && m_bactive_dialogs[dialog_code])
 	{
 	  return (*iter).pevent;
 	}
       iter++;
     }
   return NULL;
+}
+
+void CnetworkMessaging::lock_datapipe()
+{
+  LOCK_DATA_PIPE;
+}
+
+void CnetworkMessaging::unlock_datapipe()
+{
+  UNLOCK_DATA_PIPE;
 }
 
 // To be called inside the dialog box connection event
@@ -418,18 +468,25 @@ bool CnetworkMessaging::Send_to_network_client(edialogs_codes dialog_code, const
 	  i++;
 	}
       //assert(pbuffer[length - 1] == 0); does not pass
-#ifdef _DEBUG
-      printf("sending to dialog:\n\"%s\" of %d bytes\n", pbuffer, length);
-#endif
-      //printf("Sending to connection (ptr=%x)\n", (void*)pevent);
-      //printf("BUFFER WRITE SET TO FALSE\n");
-
-// BIG FIXME HERE!!!!!!!!!!!! m_write_completed does note go back to true all the time. Find out why?
-      //m_write_completed = false;
-      if (bufferevent_write(pevent, pbuffer, length) == -1)
+      // To be sure that the pipe is opened, and therefore avoid SIGPIPE
+      // retest for the connexion to avoid a broken pipe
+      LOCK_DATA_PIPE;
+      pevent = find_open_connection(dialog_code);
+      if (pevent != NULL)
 	{
-	  printf("Libevent \"bufferevent_write\" failed.\n");
+#ifdef _DEBUG
+	  printf("sending to dialog:\n\"%s\" of %d bytes\n", pbuffer, length);
+#endif
+	  //printf("Sending to connection (ptr=%x)\n", (void*)pevent);
+	  //printf("BUFFER WRITE SET TO FALSE\n");
+	  // FIXME m_write_completed does not go back to true all the time. Find out why?
+	  //m_write_completed = false;
+	  if (bufferevent_write(pevent, pbuffer, length) == -1)
+	    {
+	      printf("Libevent \"bufferevent_write\" failed.\n");
+	    }
 	}
+      UNLOCK_DATA_PIPE;
     }
   else
     {
@@ -440,7 +497,7 @@ bool CnetworkMessaging::Send_to_network_client(edialogs_codes dialog_code, const
 }
 
 // Stores the message and triggers the event
-bool CnetworkMessaging::Send_to_dialogs(edialog_message internal_message_code, const char *pdata, int size)
+bool CnetworkMessaging::Send_to_dialogs(edialog_message internal_message_code, const char *pdata, int size, void *pbevt)
 {
   t_internal_message msg;
   int                i, obsolete_arg;
@@ -450,6 +507,7 @@ bool CnetworkMessaging::Send_to_dialogs(edialog_message internal_message_code, c
       printf("Message error: too big.\n");
       return false;
     }
+  msg.passociated_event = pbevt;
   msg.message_code = internal_message_code;
   msg.size = size;
   for (i = 0; i < size; i++)
@@ -493,6 +551,7 @@ bool CnetworkMessaging::Send_to_dialogs_with_delay(edialog_message internal_mess
       else
 	iter++;
     }
+  // Push the last message into the list
   m_app2network_message_delayed_list.push_front(msg);
   UNLOCK_MSG;
   return false;
@@ -630,6 +689,38 @@ void CnetworkMessaging::remote_close_all_the_dialogs()
     printf("Error: remote close message could not be built.\n");
 }
 
+void CnetworkMessaging::remote_close_dialog(edialogs_codes code)
+{
+  std::list<t_connection>::iterator  iter;
+  scmsg::Cmessage_coding             coder;
+  string                             str;
+  const int                          cmsgsize = 4096;
+  char                               msg[cmsgsize];
+  int                                size;
+
+  str = coder.create_close_message();
+  if (coder.build_wire_message(msg, cmsgsize, &size, str))
+    {
+      // Wait for the write callback of the last "close" message
+      iter = m_active_connections.begin();
+      while (iter != m_active_connections.end())
+	{
+	  if (code == (*iter).dialog)
+	    {
+#ifdef _DEBUG
+	      printf("sending close msg to %d.\n", (*iter).dialog);
+#endif
+	      // Close after the last write completes
+	      Send_to_network_client((*iter).dialog, msg, size);
+	      //m_bactive_dialogs[code] = false;
+	    }
+	  iter++;
+	}
+    }
+  else
+    printf("Error: remote close message could not be built.\n");
+}
+
 // Wakes up with the internal event callback
 // Gets the messages from the list
 // Send them if the dialog is opened
@@ -638,7 +729,7 @@ void CnetworkMessaging::process_main_app_messages()
   std::list<t_internal_message>::iterator  iter;
   t_internal_message                      *pmsg;
 
-#ifdef __DEBUG
+#ifdef _DEBUG
   printf("process main app messages\n");
 #endif
   LOCK_MSG;
@@ -701,6 +792,26 @@ void CnetworkMessaging::process_main_app_messages()
 	    open_dialog(string(CONFIG_DIALOG_PATH),  get_dialog_app_name(config_dialog));
 	  }
 	  break;
+	case message_close_storage_dialog:
+	  {
+	    remote_close_dialog(load_save_dialog);
+	  }
+	  break;
+	case message_close_addinstrument_dialog:
+	  {
+	    remote_close_dialog(add_instrument_dialog);
+	  }
+	  break;
+	case message_close_practice_dialog:
+	  {
+	    remote_close_dialog(practice_dialog);
+	  }
+	  break;
+	case message_close_config_dialog:
+	  {
+	    remote_close_dialog(config_dialog);    
+	  }
+	  break;
 	case message_send_instrument_list:
 	  {
 	    Send_to_network_client(add_instrument_dialog, pmsg->data, pmsg->size);
@@ -714,7 +825,7 @@ void CnetworkMessaging::process_main_app_messages()
 	  break;
 	case message_send_practice:
 	  {
-#ifdef __DEBUG
+#ifdef _DEBUG
 	    printf("event send practice-----------------------------------\n");
 #endif
 	    Send_to_network_client(practice_dialog, pmsg->data, pmsg->size);
@@ -722,7 +833,7 @@ void CnetworkMessaging::process_main_app_messages()
 	  break;
 	case message_score_transfer:
 	  {
-#ifdef __DEBUG
+#ifdef _DEBUG
 	    printf("event send score to practice--------------------------------------\n");
 #endif
 	    Send_to_network_client(practice_dialog, pmsg->data, pmsg->size);
@@ -776,7 +887,7 @@ void CnetworkMessaging::register_dialog_connection(t_internal_message *pmsg, edi
   std::list<t_connection>::iterator  iter;
 
   printf("resgitering opened dialog\n");
-  //LOCK_MSG;
+  LOCK_MSG;
   iter = m_active_connections.begin();
   while (iter != m_active_connections.end())
     {
@@ -785,6 +896,8 @@ void CnetworkMessaging::register_dialog_connection(t_internal_message *pmsg, edi
 	  if ((*iter).dialog == unknown_dialog)
 	    {
 	      (*iter).dialog = dialog_type;
+	      m_bactive_dialogs[dialog_type] = true;
+	      UNLOCK_MSG;
 	      return ;
 	    }
 	  else
@@ -792,20 +905,21 @@ void CnetworkMessaging::register_dialog_connection(t_internal_message *pmsg, edi
 	}
       iter++;
     }
-  //UNLOCK_MSG;
+  UNLOCK_MSG;
 }
 
 void CnetworkMessaging::unregister_dialog_connection(struct bufferevent *pevt)
 {
   std::list<t_connection>::iterator  iter;
 
-  printf("unresgitering dialog\n");
+  printf("unregistering dialog\n");
   //LOCK_MSG;
   iter = m_active_connections.begin();
   while (iter != m_active_connections.end())
     {
       if ((*iter).pevent == pevt)
 	{
+	  m_bactive_dialogs[(*iter).dialog] = false;
 	  iter = m_active_connections.erase(iter);
 	}
       iter++;
@@ -834,6 +948,12 @@ void CnetworkMessaging::Exit_EventLoop()
   // This will make Server_loop(); return
   if (event_base_loopexit(m_pevt_base, NULL) == -1) // Waits for the last registered events to be completed
     //if (event_base_loopbreak(m_pevt_base) == -1)
-    printf("Critical error in a libevent call: loppbreak failed.\n");
+    printf("Critical error in a libevent call: loopbreak failed.\n");
+}
+
+// Adds the allocated callback data structure to a list to be able to free it later
+void CnetworkMessaging::add_cb_data(Creceive_callback_data *pcbdata)
+{
+  m_rcv_data_list.push_back(pcbdata);
 }
 

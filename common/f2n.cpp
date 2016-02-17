@@ -51,6 +51,10 @@ Cf2n::Cf2n(float A, float frequency_ratio):
   //  printf("i=%d f=%f\n", i, note2frequ(i));
 }
 
+#ifdef __ANDROID__
+#define log2(A) (log(A) / log(2.))
+#endif
+
 // A4 = 4 x 12 + 9 = 57  C4 = 4 x 12
 int Cf2n::frequ2note(float f)
 {

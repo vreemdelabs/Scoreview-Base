@@ -100,6 +100,7 @@ void close_function(void *pdata)
   int i;
 
   save_coordinates(papp_data);
+  usleep(200000); // ???????? it locks if not present FIXMEa
   papp_data->ptcpclient->close_function(string(ADDINSTRUMENT_DIALOG_CODENAME));
   i = 0;
   while (papp_data->ptcpclient->get_state() != state_closed && i < 8)

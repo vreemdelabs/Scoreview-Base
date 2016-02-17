@@ -52,8 +52,10 @@
 #include "scorerenderer.h"
 #include "card.h"
 #include "messages.h"
+#include "tcp_message_receiver.h"
 #include "messages_network.h"
 #include "app.h"
+#include "env.h"
 #include "sdlcalls.h"
 
 int init_SDL_image()
@@ -82,7 +84,7 @@ int init_SDL(SDL_Window **psdlwindow, SDL_GLContext *GLContext, int x, int y, in
   SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
   SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
   //
-  *psdlwindow = SDL_CreateWindow("ScoreView (beta release jan 2016)",
+  *psdlwindow = SDL_CreateWindow(MAIN_WINDOW_TITLE,
 				 x,
 				 y,
 				 width, height,

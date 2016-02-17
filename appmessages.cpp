@@ -50,6 +50,7 @@
 #include "card.h"
 #include "cardnames.h"
 #include "messages.h"
+#include "tcp_message_receiver.h"
 #include "messages_network.h"
 #include "message_decoder.h"
 #include "app.h"
@@ -486,7 +487,7 @@ void Cappdata::process_network_messages()
   int                    cur_size;
   int                    msg_size;
   char                  *msg_ptr;
-  
+
   while (m_pserver->pop_message(&msg))
     {
 #ifdef _DEBUG
@@ -504,7 +505,9 @@ void Cappdata::process_network_messages()
 	    {
 	    case network_message_dialog_opened:
 	      {
-		//printf("Dialog openened\n");		
+#ifdef _DEBUG
+		printf("Dialog openened\n");
+#endif
 		// Update the opened dialog box type in the server connection list
 		m_pserver->register_dialog_connection(&msg, coder.app_code());
 		switch (coder.app_code())
@@ -532,7 +535,9 @@ void Cappdata::process_network_messages()
 	      break;
 	    case network_message_closed_dialog:
 	      {
-		//printf("Dialog closed\n");
+#ifdef _DEBUG
+		printf("Dialog closed\n");
+#endif
 		// Connection status done in the server thread
 		// Flip the coresponding card to disabled
 		switch (coder.app_code())
@@ -556,7 +561,7 @@ void Cappdata::process_network_messages()
 			    if (pshared_data->play_State == state_practice || pshared_data->play_State == state_practiceloop)
 			      play_practice_enabled_in_locked_area(false); // FIXME should be a mesaging system
 			    UNLOCK;
-			    pc->activate_card(false);
+			    //pc->activate_card(false);
 			  }
 		      }
 		      break;
@@ -603,6 +608,25 @@ void Cappdata::process_network_messages()
 		      m_pscore = new CScore(std::string("violin"));
 		      m_pcurrent_instrument = m_pscore->get_first_instrument();
 		      set_score_renderer(m_pcurrent_instrument->get_name());
+		      update_practice_stop_time(true);
+		      printfscore();
+		    }
+		    break;
+		  case scmsg::enewfromfile:
+		    {
+		      // Clear all the score and sound data
+#ifdef _DEBUG
+		      printf("New project from a sound file, clearing everything.\n");
+#endif
+		      clear_sound();
+		      delete m_pscore;
+		      m_pscore = new CScore(std::string("violin"));
+		      m_pcurrent_instrument = m_pscore->get_first_instrument();
+		      set_score_renderer(m_pcurrent_instrument->get_name());
+		      if (load_sound_buffer(path + file_name))
+			{
+			  printf("Critical error loading the sound file \"%s\".\n", file_name.c_str());
+			}
 		      update_practice_stop_time(true);
 		      printfscore();
 		    }

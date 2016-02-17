@@ -26,7 +26,8 @@
 // 32b    Size
 // n x 8b Protocol buffer wiremessage
 //
-#define NMAGICN  0x218A
+#define NMAGICN     0x217A
+#define HEADER_SIZE      6
 
 namespace scmsg
 {
@@ -42,7 +43,8 @@ enum efileOperation
     edonothing,
     efileopen,
     efilesave,
-    enewfile
+    enewfile,
+    enewfromfile
   };
 
 typedef struct s_practice_params

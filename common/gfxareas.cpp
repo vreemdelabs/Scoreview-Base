@@ -22,7 +22,7 @@
 #include <iterator>
 #include <list>
 
-#include <SDL2/SDL.h>
+//#include <SDL2/SDL.h>
 //#include <SDL2/SDL_ttf.h>
 
 #include "gfxareas.h"

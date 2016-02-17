@@ -28,3 +28,5 @@
 //#define MAINFONT "WickedScaryMovie.ttf"
 
 #define BIGFONT  "ArmWrestler.ttf"
+
+#define MAIN_WINDOW_TITLE "ScoreView (beta release Rev.2 Feb 2016)"
