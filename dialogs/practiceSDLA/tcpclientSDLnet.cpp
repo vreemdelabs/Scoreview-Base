@@ -89,6 +89,9 @@ bool CTCP_Client::Server_init()
 #endif
       exit(EXIT_FAILURE);
     }
+#ifdef _DEBUG  
+  printf("Server host %s:%d\n", SERVER_HOST, SCOREVIEW_PORT);
+#endif
   m_ip.host = inet_addr(SERVER_HOST);
   m_ip.port = SCOREVIEW_PORT;
   //
@@ -99,6 +102,8 @@ bool CTCP_Client::Server_init()
 #endif
       exit(1);
     }
+#ifndef __WINDOWS
+  // Does not work on windows? Maybe because it does not return localhost.
   // Resolve the host we are connecting to
   if (SDLNet_ResolveHost(&m_ip, host, SCOREVIEW_PORT) < 0)
     {
@@ -107,6 +112,10 @@ bool CTCP_Client::Server_init()
 #endif
       exit(EXIT_FAILURE);
     }
+#ifdef _DEBUG
+  printf("Host: %s\n", host);
+#endif
+#endif
   return true;
 }
 

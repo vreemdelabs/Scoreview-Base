@@ -58,7 +58,6 @@ LIBS += -lWs2_32
 endif
 LIBS += -lpthread -ltinyxml
 LIBS += -lSDL2_net
-LIBS += -lSDL2_gfx
 LIBS += ../../meshloader/meshloader.a
 LIBS += ../../messages/messages.a `pkg-config --cflags --libs protobuf`
 

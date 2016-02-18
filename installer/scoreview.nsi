@@ -14,7 +14,7 @@
 Name "ScoreviewInstaller"
 
 ; The file to write
-OutFile "ScoreviewInstallBetaRev1.exe"
+OutFile "ScoreviewInstallBetaRev2.exe"
 
 ; The default installation directory
 InstallDir $PROGRAMFILES\vreemdelabs\scoreview
@@ -29,7 +29,7 @@ RequestExecutionLevel admin
 ; Compression choice
 SetCompressor /SOLID lzma
 
-!define MUI_PRODUCT "Scoreview Beta Ver. 1 Rev1"
+!define MUI_PRODUCT "Scoreview Beta Ver. 1 Rev2"
 !define INSTALL_APPDATA "$APPDATA\scoreview\"
 
 ;--------------------------------
