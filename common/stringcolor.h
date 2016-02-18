@@ -21,7 +21,7 @@
 
 #define BLACK 0xFF000000
 #define WHITE 0xFFFFFFFF
-
+#define TRANSGRAY 0x7F7F7F7F
 
 // Common colors for instruments strings and notes
 

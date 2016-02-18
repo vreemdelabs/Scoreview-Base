@@ -44,7 +44,7 @@ CScorePlacement::CScorePlacement(int notenum):
   m_notenum(notenum),
   m_rest_staff_octave(4),
   m_bautobeam(false),
-  m_bpracticing(false),
+  m_practicing(enotpracticing),
   m_phand(NULL)
 {
   int i;
@@ -573,7 +573,7 @@ void CScorePlacement::change_voffset(int inc)
   m_vmove = m_vmove >= 0? m_vmove : 0;
 }
 
-void CScorePlacement::set_metrics(Cgfxarea *pw, double starttime, double viewtime, bool bpracticing)
+void CScorePlacement::set_metrics(Cgfxarea *pw, double starttime, double viewtime, epracticestate practicing_state)
 {
   pw->get_pos(&m_wpos);
   pw->get_dim(&m_wdim);
@@ -582,7 +582,7 @@ void CScorePlacement::set_metrics(Cgfxarea *pw, double starttime, double viewtim
   m_fdim.x = 1 / m_yxratio;
   m_viewtime = viewtime;
   m_starttime = starttime;
-  m_bpracticing = bpracticing;
+  m_practicing = practicing_state;
 }
 
 // Only usefull with the piano and his two keys
@@ -1158,14 +1158,28 @@ void CScorePlacement::place_practice_index()
   float y;
   float dimx;
   float dimy;
+  int   color;
+  bool  brender = false;
 
-  if (m_bpracticing)
+  x = 0;
+  if (m_practicing == epracticing)
     {
       x = m_fdim.x / 2;
+      color = BLACK;
+      brender = true;
+    }
+  if (m_practicing == enotpracticing)
+    {
+      x = m_fdim.x / 4;
+      brender = true;
+      color = TRANSGRAY;
+    }
+  if (brender)
+    {
       y = 0;
       dimx = m_fdim.x / (float)m_wdim.x;
       dimy = m_fdim.y;
-      add_rectangle_polygon(x, y, dimx, dimy, BLACK);
+      add_rectangle_polygon(x, y, dimx, dimy, color);
     }
 }
 
@@ -1179,4 +1193,4 @@ void CScorePlacement::place_notes_and_bars(CScore *pscore, CInstrument *pinstrum
   place_bars(pml);
   place_practice_index();
 }
-
+ 

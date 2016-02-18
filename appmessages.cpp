@@ -456,7 +456,7 @@ void Cappdata::update_practice_stop_time(bool reload)
 
   LOCK;
   viewtime = pshared_data->viewtime;
-  tref = pshared_data->timecode - viewtime;
+  tref = pshared_data->timecode - viewtime + (viewtime / 4.); // Do not show the notes from the key of it will be difficult to edit the first note
   tref = tref < 0? pshared_data->timecode : tref;
   tracklen = pshared_data->trackend;
   practicespeed = pshared_data->practicespeed;
@@ -690,7 +690,7 @@ void Cappdata::process_network_messages()
 	      {
 		std::list<t_portaudio_api> outapis;
 		t_channel_select_strings   chs;
-		  
+
 		if (coder.get_audioIO_config(&outapis, &chs))
 		  reopen_stream(&chs);
 	      }

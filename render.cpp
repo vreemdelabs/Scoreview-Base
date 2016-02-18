@@ -510,12 +510,12 @@ void Cappdata::render_selected_notes_box(Cgfxarea *pw, CScorePlacement *pplaceme
   t_note_selection_box *psb;
 
   duration = m_note_selection.box.stop_tcode - m_note_selection.box.start_tcode;
-  // FIXME not rendering really, should be in a app state management
+  // FIXME not really rendering, should be in a app state management
   send_practice_msg = check_if_notes_just_filtered(&m_note_selection.cmdlist);
   if (send_practice_msg)
     {
       // If filtering just finished, update the timecode used to show the progression in the box
-      m_note_selection.state = loopstate_playing; // FIXME not used yet
+      m_note_selection.state = loopstate_playing;   // FIXME not used yet
       m_note_selection.play_timecode = m_last_time;
       // Start in the practice window if present
       if (m_pserver->is_practice_dialog_enable())
@@ -1177,11 +1177,26 @@ void Cappdata::render_gui()
       if (strcmp(pw->m_name, "score") == 0)
 	{
 	  std::list<CNote*> played_note_list;
+	  epracticestate  practice_state;
 
+	  switch (m_appstate)
+	    {
+	    case statepractice:
+		practice_state = epracticing;
+	      break;
+	    case statepracticeloop:
+	      practice_state = epracticingloop;
+	      break;
+	    default:
+	      if (m_pserver->is_practice_dialog_enable())
+		practice_state = enotpracticing;
+	      else
+		practice_state = epracticeclosed;
+	    }
 	  draw_basic_rectangle(pw, MAKE_COLOR_32(240, 240, 250, 255));
 	  // Place the score image in a descriptive list
 	  m_pScorePlacement->clear();
-	  m_pScorePlacement->set_metrics(pw, starttime, viewtime, m_appstate == statepractice);
+	  m_pScorePlacement->set_metrics(pw, starttime, viewtime, practice_state);
 	  m_pScorePlacement->place_notes_and_bars(m_pscore, m_pcurrent_instrument);
 	  // Render the score
 	  set_played_note_list_for_score_highlight(&played_note_list);

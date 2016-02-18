@@ -142,6 +142,14 @@ typedef struct s_measure_occupancy
   bool         spaces[MAXMTIMESPACES];
 }              t_measure_occupancy;
 
+enum   epracticestate
+  {
+    epracticeclosed,
+    enotpracticing,
+    epracticing,
+    epracticingloop
+  };
+
 #define KEY_OFFSET   (14. *  m_zradius)
 #define TEMPO_OFFSET 0.014
 #define POSITION_THRESHOLD (8.)
@@ -153,7 +161,7 @@ class CScorePlacement
   virtual ~CScorePlacement();
 
   void clear();
-  void set_metrics(Cgfxarea *pw, double starttime, double viewtime, bool bpracticing);
+  void set_metrics(Cgfxarea *pw, double starttime, double viewtime, epracticestate practicing_state);
  // void change_vertical_zoom(int inc);
   void change_vertical_zoom(int inc, t_coord mousepos);
   void change_voffset(int inc);
@@ -290,8 +298,8 @@ class CScorePlacement
 
   int      m_rest_staff_octave;
 
-  bool     m_bautobeam;
-  bool     m_bpracticing;
+  bool           m_bautobeam;
+  epracticestate m_practicing;
 
   CInstrumentHand *m_phand;
 
