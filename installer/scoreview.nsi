@@ -45,6 +45,10 @@ UninstPage instfiles
 
 ;--------------------------------
 
+Section "Install for all the users"
+  SetShellVarContext all
+SectionEnd
+
 ; The stuff to install
 Section "Scoreview (required)"
 
@@ -173,9 +177,6 @@ Section "Desktop shortcut"
   CreateShortCut "$DESKTOP\${MUI_PRODUCT}.lnk" "$INSTDIR\scoreview.exe" ""
 SectionEnd
 
-Section "Install for all the users"
-  SetShellVarContext all
-SectionEnd
 ;--------------------------------
 
 ; Uninstaller
@@ -285,3 +286,4 @@ Section "Uninstall"
   RMDir "$INSTDIR"
 
 SectionEnd
+
