@@ -103,7 +103,7 @@ bool CGL2Dprimitives::CreateProgram(t_gl_shader_Inouts *pgl_io)
     "varying vec2 vTexCoord;"
     "void main()"
     "{"
-    "  gl_FragColor = texture(textureUnit0, vTexCoord);"
+    "  gl_FragColor = texture2D(textureUnit0, vTexCoord);"
     "}";
 
   GLint  status;
