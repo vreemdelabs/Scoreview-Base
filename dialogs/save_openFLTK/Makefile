@@ -20,6 +20,7 @@ else
 	else
 		CONSOLEFLAG=-mconsole
 	endif
+	TINYXMLINCLUDES="/mingw64/include/"
 endif
 #TINYXMLINCLUDES="./tinybind-master/tinyxml/"
 MESSAGESINCLUDES="../../messages/"
@@ -30,8 +31,8 @@ FLAGS = -Wall -O2 -c -D$(OPERATINGON) `fltk-config --cxxflags` -I$(INCLUDES) -I$
 else
 FLAGS = -Wall -g -c -D_DEBUG -D$(OPERATINGON) `fltk-config --cxxflags` -I$(INCLUDES) -I$(COMMONINCLUDES) -I$(MESSAGESINCLUDES)
 endif
-#FLAGS += -I$(TINYXMLINCLUDES)
 ifeq ($(OPERATINGON),__WINDOWS)
+FLAGS += -I$(TINYXMLINCLUDES)
 LIBEVENTINCLUDES="C:/dev/libs/libevent-2.0.22-stable/include"
 FLAGS += -I$(LIBEVENTINCLUDES)
 endif
