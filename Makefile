@@ -73,7 +73,7 @@ LIBS += -lportaudio
 LIBS += -lsndfile -lm -lOpenCL -lpthread -ltinyxml -lprotobuf
 LIBS += -levent_core -levent
 LIBS += ./meshloader/meshloader.a
-LIBS += ./DSPCPPFilterLib/DSPCPPFilters.a
+LIBS += ./modules/DSPFilters/shared/DSPFilters/libDSPFilters.a
 LIBS += ./messages/messages.a `pkg-config --cflags --libs protobuf`
 
 OBJDIR=obj
@@ -96,9 +96,9 @@ clean:
 	rm -f $(COMMONSRCDIR)/*~
 	rm -f $(OUTPUT_DIR)$(EXE_NAME)
 
-cleanall: clean
+superclean: clean
 	cd ./meshloader && make clean
-	cd ./DSPCPPFilterLib && make clean
+	cmake --build ./modules/DSPFilters/shared --target clean
 	cd ./messages && make clean
 	cd ./dialogs/save_openFLTK && make clean
 	cd ./dialogs/practiceSDLA && make clean
@@ -214,7 +214,8 @@ endif
 
 project:
 	cd ./meshloader && make all
-	cd ./DSPCPPFilterLib && make all
+	cmake ./modules/DSPFilters/shared
+	cmake --build ./modules/DSPFilters/shared
 	cd ./messages && make all
 	cd ./dialogs/save_openFLTK && make all
 	cd ./dialogs/practiceSDLA && make all
