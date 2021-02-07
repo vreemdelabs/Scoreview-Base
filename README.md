@@ -53,6 +53,8 @@ Otherwise, the headers will conflict for Winsock.
 
 On linux, just install the dev packages for the libraries mentioned above.
 
+![alt text](screenshot.jpg)
+
 ## Copyright
 
 Code by Patrick Areny, as 2/7/2021 no contributions yet.
