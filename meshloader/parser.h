@@ -20,6 +20,7 @@
 #define TRANSFERTSTRSZ  4096
 #define MAX_COORD       4
 #define MAX_FACEINDEXES (4 * 3)
+#define ERRSTRSZ        4096
 
 class Cparser
 {
@@ -58,7 +59,7 @@ private:
   void get_face(int res);
 
 public:
-  char   m_error_str[64];
+  char   m_error_str[ERRSTRSZ];
  private:
   int    m_state;
   CMesh                 *m_curpmesh;

@@ -5,18 +5,19 @@
 
 ifdef SystemRoot
 OPERATINGON=__WINDOWS
+INCLUDES = ""
 else
 OPERATINGON=__LINUX
+INCLUDES = "-I /usr/include/"
 endif
 RELEASE=TRUE
 
 CC = g++
-INCLUDES = "/usr/include/"
 COMMONINCLUDE = "../common/"
 
 CC = g++
 C  = gcc
-CFLAGS = -Wall -g -c -I$(INCLUDES) -I$(COMMONINCLUDE)
+CFLAGS = -Wall -g -c $(INCLUDES) -I$(COMMONINCLUDE)
 LIB = -Lsystem/
 ifeq ($(OPERATINGON),__LINUX)
 EXT=

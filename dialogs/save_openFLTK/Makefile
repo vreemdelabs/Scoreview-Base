@@ -5,13 +5,15 @@
 
 ifeq ($(OS), Windows_NT)
 OPERATINGON=__WINDOWS
+INCLUDES = 
 else
 OPERATINGON=__LINUX
+INCLUDES = "-I /usr/include/"
 endif
 RELEASE=TRUE
 
 CC = g++
-INCLUDES = "/usr/include/"
+
 
 ifeq ($(OPERATINGON),__LINUX)
 else
@@ -20,21 +22,20 @@ else
 	else
 		CONSOLEFLAG=-mconsole
 	endif
-	TINYXMLINCLUDES="/mingw64/include/"
 endif
 #TINYXMLINCLUDES="./tinybind-master/tinyxml/"
 MESSAGESINCLUDES="../../messages/"
 COMMONINCLUDES="../../common/"
 
 ifdef RELEASE
-FLAGS = -Wall -O2 -c -D$(OPERATINGON) `fltk-config --cxxflags` -I$(INCLUDES) -I$(COMMONINCLUDES) -I$(MESSAGESINCLUDES)
+FLAGS = -Wall -O2 -c -D$(OPERATINGON) `fltk-config --cxxflags` $(INCLUDES) -I$(COMMONINCLUDES) -I$(MESSAGESINCLUDES)
 else
-FLAGS = -Wall -g -c -D_DEBUG -D$(OPERATINGON) `fltk-config --cxxflags` -I$(INCLUDES) -I$(COMMONINCLUDES) -I$(MESSAGESINCLUDES)
+FLAGS = -Wall -g -c -D_DEBUG -D$(OPERATINGON) `fltk-config --cxxflags` $(INCLUDES) -I$(COMMONINCLUDES) -I$(MESSAGESINCLUDES)
 endif
 ifeq ($(OPERATINGON),__WINDOWS)
-FLAGS += -I$(TINYXMLINCLUDES)
-LIBEVENTINCLUDES="C:/dev/libs/libevent-2.0.22-stable/include"
-FLAGS += -I$(LIBEVENTINCLUDES)
+#FLAGS += -I"/mingw64/include/"
+#LIBEVENTINCLUDES="C:/dev/libs/libevent-2.0.22-stable/include"
+#FLAGS += -I$(LIBEVENTINCLUDES)
 endif
 
 #SDL2_DIR="/usr/local/lib/"

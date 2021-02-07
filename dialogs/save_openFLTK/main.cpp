@@ -20,7 +20,15 @@
 #include <string>
 #include <iterator>
 #include <list>
-
+/*
+#ifdef __LINUX
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#else
+#include <winsock2.h>
+#include <windows.h>
+#endif //__LINUX
+*/
 #include <tinyxml.h>
 #include <pthread.h>
 
@@ -148,7 +156,7 @@ void show_file_selection_dialog(t_app_data *papp_data, int type, bool& bcancel, 
       bcancel = true;
       break; // CANCEL
     default:
-      strncpy(str, pfnfc->filename(), cstrsz);
+      strncpy(str, pfnfc->filename(), cstrsz - 1);
       for (i = strlen(str) - 1; i > 0; i--)
 	{
 	  if (str[i] == '\\' || str[i] == '/')

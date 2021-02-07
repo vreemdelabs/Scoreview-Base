@@ -5,8 +5,10 @@
 
 ifeq ($(OS), Windows_NT)
 OPERATINGON=__WINDOWS
+INCLUDES = 
 else
 OPERATINGON=__LINUX
+INCLUDES = "-I /usr/include/"
 endif
 RELEASE=TRUE
 
@@ -21,16 +23,14 @@ else
 		CONSOLEFLAG=-mconsole
 	endif
 endif
-#TINYXMLINCLUDES="./tinybind-master/tinyxml/"
 MESSAGESINCLUDES="../../messages/"
 COMMONINCLUDES="../../common/"
 
 ifdef RELEASE
-FLAGS = -Wall -O2 -c -D$(OPERATINGON) `fltk-config --cxxflags` -I$(INCLUDES) -I$(COMMONINCLUDES) -I$(MESSAGESINCLUDES)
+FLAGS = -Wall -O2 -c -D$(OPERATINGON) `fltk-config --cxxflags` $(INCLUDES) -I$(COMMONINCLUDES) -I$(MESSAGESINCLUDES)
 else
-FLAGS = -Wall -g -c -D_DEBUG -D$(OPERATINGON) `fltk-config --cxxflags` -I$(INCLUDES) -I$(COMMONINCLUDES) -I$(MESSAGESINCLUDES)
+FLAGS = -Wall -g -c -D_DEBUG -D$(OPERATINGON) `fltk-config --cxxflags` $(INCLUDES) -I$(COMMONINCLUDES) -I$(MESSAGESINCLUDES)
 endif
-#FLAGS += -I$(TINYXMLINCLUDES)
 ifeq ($(OPERATINGON),__WINDOWS)
 LIBEVENTINCLUDES="C:/dev/libs/libevent-2.0.22-stable/include"
 FLAGS += -I$(LIBEVENTINCLUDES)
