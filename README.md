@@ -7,12 +7,12 @@ were weird. However it is a nice tool to visually analyse sounds.
 
 ## Crasy choice and over ambition
 
-The software is portable, I even wanted to compile it on android native before understanding Android was trash in 2015.
-I do ont know the state of Android native now but I would not try to know.
-I used OpenCL, and OpenCL is a semi failure because of a voluntary lack of support from the industry.
+The software is portable, I even wanted to compile it on android native before understanding that Android was trash in 2015.
+I do not know the state of Android native now but I would not try to know.
+I used OpenCL, and OpenCL while technically sound is a semi-failure because of a voluntary lack of support from the industry.
 
-The application is made of TCP/IP servers using protocol buffers.
-You could run each window on another machine. And this was really crasy.
+The application is made of TCP/IP servers using protocol buffers, meaning that when you open a window, you start an app connecting to the main app in tcpip.
+You could run each window on another machine. The idea was to disctribute music sheet to tablets. And the way I implemented it, was really crasy.
 
 ## Command to build it:
 
