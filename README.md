@@ -8,8 +8,8 @@ were weird. However it is a nice tool to visually analyse sounds.
 ## Crasy choice and over ambition
 
 The software is portable, I even wanted to compile it on android native before understanding that Android was trash in 2015.
-I do not know the state of Android native now but I would not try to know.
-I used OpenCL, and OpenCL while technically sound is a semi-failure because of a voluntary lack of support from the industry.
+I do not know the state of Android native now but I will not try again.
+I used OpenCL, and while technically sound, it is a semi-failure because of a voluntary lack of support from the industry.
 
 The application is made of TCP/IP servers using protocol buffers, meaning that when you open a window, you start an app connecting to the main app in tcpip.
 You could run each window on another machine. The idea was to disctribute music sheet to tablets. And the way I implemented it, was really crasy.
@@ -26,7 +26,7 @@ It needs a lot of dependecies: SDL2, SDL2_ttf, SDL2_image, SDL2_net, SDL2_gfx, g
 
 On windows they can be installed with pacman on MSys, be carefull about the 64 or 32 in mingw64/32.
 However you need to use mingw64 to compile and be sure that in your shell "gcc -dumpmachine" gives "x86_64-w64-mingw64".
-I use Nvidia OpenCL, despite the fact that OpenCL2 is not suported by Nvidia, their OpenCL frontend is great.
+I use the Nvidia OpenCL frontend library, despite the fact that OpenCL2 is not suported by Nvidia, their OpenCL frontend was great compared to AMD or intel.
 
 ## Examples
 
